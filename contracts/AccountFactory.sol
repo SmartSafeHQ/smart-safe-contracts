@@ -7,6 +7,8 @@ contract AccountFactory {
     address public immutable owner;
     uint64 public nonce = 0;
 
+    event Deployed(address indexed);
+
     constructor(address _owner) {
         owner = _owner;
     }
@@ -39,7 +41,7 @@ contract AccountFactory {
                                 keccak256(
                                     abi.encodePacked(
                                         type(AccountAbstraction).creationCode,
-                                        abi.encode(owner)
+                                        abi.encode(_owner)
                                     )
                                 )
                             )
@@ -49,7 +51,7 @@ contract AccountFactory {
             );
     }
 
-    function deployContract(address _owner) external returns (address) {
+    function deployContract(address _owner) external onlyOwner {
         bytes32 salt = computeSalt(_owner);
         address predictedAddress = computeAddress(_owner);
 
@@ -61,6 +63,6 @@ contract AccountFactory {
 
         nonce++;
 
-        return address(newlyDeployedContract);
+        emit Deployed(address(newlyDeployedContract));
     }
 }
