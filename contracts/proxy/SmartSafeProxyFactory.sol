@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {AccountAbstraction} from "./AccountAbstraction.sol";
+import {SmartSafeProxy} from "./SmartSafeProxy.sol";
 
-contract AccountFactory {
+contract SmartSafeProxyFactory {
     address public immutable owner;
-    uint64 public nonce = 0;
+    uint64 internal nonce = 0;
 
     event Deployed(address indexed);
 
@@ -16,7 +16,7 @@ contract AccountFactory {
     modifier onlyOwner() {
         require(
             msg.sender == owner,
-            "[AccountFactory#onlyOwner]: Caller is not the owner."
+            "[SmartSafeFactory#onlyOwner]: Caller is not the owner."
         );
 
         _;
@@ -40,7 +40,7 @@ contract AccountFactory {
                                 salt,
                                 keccak256(
                                     abi.encodePacked(
-                                        type(AccountAbstraction).creationCode,
+                                        type(SmartSafeProxy).creationCode,
                                         abi.encode(_owner)
                                     )
                                 )
@@ -51,13 +51,11 @@ contract AccountFactory {
             );
     }
 
-    function deployContract(address _owner) external onlyOwner {
-        bytes32 salt = computeSalt(_owner);
-        address predictedAddress = computeAddress(_owner);
+    function deploySmartSafeProxy(address _smartSafe) external onlyOwner {
+        bytes32 salt = computeSalt(_smartSafe);
+        address predictedAddress = computeAddress(_smartSafe);
 
-        AccountAbstraction newlyDeployedContract = new AccountAbstraction{
-            salt: salt
-        }(_owner);
+        SmartSafeProxy newlyDeployedContract = new SmartSafeProxy{salt: salt}(_smartSafe);
 
         require(address(newlyDeployedContract) == predictedAddress);
 
