@@ -1,9 +1,14 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-contract-sizer"
+import "hardhat-gas-reporter"
 
 const config: HardhatUserConfig = {
   solidity: "0.8.19",
   defaultNetwork: "hardhat",
+  contractSizer: {
+    runOnCompile: true,
+  },
   networks: {
     hardhat: {
       // these are the Remix IDE accounts
