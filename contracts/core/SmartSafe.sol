@@ -12,7 +12,13 @@ contract SmartSafe is
     OwnerManager,
     TransactionManager,
     SignatureManager
-{
+{   
+    error SignaturesAlreadyCollected();
+    error TransactionExecutionFailed(bytes);
+    error UnsuficientSignatures();
+
+    event TransactionExecutionSucceeded(uint64);
+
     constructor(address[] memory _owners, uint8 _threshold) {
         OwnerManager.setupOwners(_owners, _threshold);
     }
@@ -34,17 +40,24 @@ contract SmartSafe is
     }
 
     function executeTransaction(
-        address _to,
-        bytes calldata _data,
-        uint256 _value,
-        bytes memory _signatures
+        uint64 _transactionNonce
     ) external nonReentrant {
-        (bool success, ) = _to.call{value: _value}(_data);
+        TransactionManager.Transaction memory transaction = TransactionManager
+            .getTransaction(_transactionNonce);
 
-        require(
-            success,
-            "[SmartSafe#executeTransaction]: function call failed."
-        );
+        if (transaction.signatures.length != OwnerManager.threshold) {
+            revert UnsuficientSignatures();
+        }
+
+        (bool success, bytes memory data) = transaction.to.call{
+            value: transaction.value
+        }(transaction.data);
+
+        if (!success && data.length > 0) {
+            revert TransactionExecutionFailed(data);
+        }
+
+        emit TransactionExecutionSucceeded(_transactionNonce);
     }
 
     function createTransactionProposal(
@@ -52,6 +65,7 @@ contract SmartSafe is
         address _from,
         address _to,
         uint256 _value,
+        bytes calldata _data,
         // signature
         address _signer,
         bytes32 _hashedTransactionProposal,
@@ -64,6 +78,7 @@ contract SmartSafe is
             _from,
             _to,
             _value,
+            _data,
             _signature
         );
     }
@@ -83,10 +98,9 @@ contract SmartSafe is
                 .length
         );
 
-        require(
-            (signaturesCount + 1) <= threshold,
-            "[SmartSafe#addTransactionSignature]: all required signatures already collected."
-        );
+        if ((signaturesCount + 1) > OwnerManager.threshold) {
+            revert SignaturesAlreadyCollected();
+        }
 
         TransactionManager.tm_addTransactionSignature(
             _transactionNonce,

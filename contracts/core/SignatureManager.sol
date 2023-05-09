@@ -9,8 +9,11 @@ contract SignatureManager is EIP712 {
         address to;
         address from;
         uint256 value;
+        bytes data;
         uint64 transactionNonce;
     }
+
+    error InvalidSigner();
 
     constructor() EIP712("Smart Safe Signature Manager", "1.0.0") {}
 
@@ -24,10 +27,9 @@ contract SignatureManager is EIP712 {
             _signature
         );
 
-        require(
-            _signer == transactionSigner,
-            "[SignatureManager#checkTransactionSignature]: invalid transaction signer."
-        );
+        if (_signer != transactionSigner) {
+            revert InvalidSigner();
+        }
 
         return transactionSigner;
     }
