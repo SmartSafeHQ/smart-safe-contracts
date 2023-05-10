@@ -11,7 +11,7 @@ contract OwnerManager {
     address internal constant LINKED_LIST = address(0x1);
 
     uint8 public totalOwners;
-    mapping(address => address) internal owners;
+    mapping(address => address) private owners;
 
     function setupOwners(address[] memory _owners, uint8 _threshold) internal {
         if (_threshold != _owners.length) {

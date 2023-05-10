@@ -12,7 +12,7 @@ contract SmartSafe is
     OwnerManager,
     TransactionManager,
     SignatureManager
-{   
+{
     error SignaturesAlreadyCollected();
     error TransactionExecutionFailed(bytes);
     error UnsuficientSignatures();
@@ -24,16 +24,16 @@ contract SmartSafe is
     }
 
     modifier checkTransaction(
-        address _signer,
+        address _transactionProposalSigner,
         bytes32 _hashedTransactionProposal,
-        bytes memory _signature
+        bytes memory _transactionProposalSignature
     ) {
-        OwnerManager.isSafeOwner(_signer);
+        OwnerManager.isSafeOwner(_transactionProposalSigner);
 
         SignatureManager.checkTransactionSignature(
-            _signer,
+            _transactionProposalSigner,
             _hashedTransactionProposal,
-            _signature
+            _transactionProposalSignature
         );
 
         _;
@@ -42,16 +42,18 @@ contract SmartSafe is
     function executeTransaction(
         uint64 _transactionNonce
     ) external nonReentrant {
-        TransactionManager.Transaction memory transaction = TransactionManager
-            .getTransaction(_transactionNonce);
+        TransactionManager.Transaction
+            memory proposedTransaction = TransactionManager.getTransaction(
+                _transactionNonce
+            );
 
-        if (transaction.signatures.length != OwnerManager.threshold) {
+        if (proposedTransaction.signatures.length != OwnerManager.threshold) {
             revert UnsuficientSignatures();
         }
 
-        (bool success, bytes memory data) = transaction.to.call{
-            value: transaction.value
-        }(transaction.data);
+        (bool success, bytes memory data) = proposedTransaction.to.call{
+            value: proposedTransaction.value
+        }(proposedTransaction.data);
 
         if (!success && data.length > 0) {
             revert TransactionExecutionFailed(data);
@@ -67,30 +69,38 @@ contract SmartSafe is
         uint256 _value,
         bytes calldata _data,
         // signature
-        address _signer,
+        address _transactionProposalSigner,
         bytes32 _hashedTransactionProposal,
-        bytes memory _signature
+        bytes memory _transactionProposalSignature
     )
         external
-        checkTransaction(_signer, _hashedTransactionProposal, _signature)
+        checkTransaction(
+            _transactionProposalSigner,
+            _hashedTransactionProposal,
+            _transactionProposalSignature
+        )
     {
         TransactionManager.tm_createTransactionProposal(
             _from,
             _to,
             _value,
             _data,
-            _signature
+            _transactionProposalSignature
         );
     }
 
     function addTransactionSignature(
         uint64 _transactionNonce,
-        address _signer,
+        address _transactionProposalSigner,
         bytes32 _hashedTransactionProposal,
-        bytes memory _signature
+        bytes memory _transactionProposalSignature
     )
         external
-        checkTransaction(_signer, _hashedTransactionProposal, _signature)
+        checkTransaction(
+            _transactionProposalSigner,
+            _hashedTransactionProposal,
+            _transactionProposalSignature
+        )
     {
         uint8 signaturesCount = uint8(
             TransactionManager
@@ -104,7 +114,7 @@ contract SmartSafe is
 
         TransactionManager.tm_addTransactionSignature(
             _transactionNonce,
-            _signature
+            _transactionProposalSignature
         );
     }
 }

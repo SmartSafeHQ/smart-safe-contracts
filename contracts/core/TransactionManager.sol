@@ -25,7 +25,7 @@ contract TransactionManager {
 
     function getTransactionSignatures(
         uint64 _transactionNonce
-    ) public view returns (bytes[] memory) {
+    ) internal view returns (bytes[] memory) {
         return transactions[_transactionNonce].signatures;
     }
 
@@ -34,10 +34,10 @@ contract TransactionManager {
         address _to,
         uint256 _value,
         bytes calldata _data,
-        bytes memory _signature
+        bytes memory _transactionProposalSignature
     ) internal {
         bytes[] memory signatures = new bytes[](1);
-        signatures[0] = _signature;
+        signatures[0] = _transactionProposalSignature;
 
         Transaction memory transactionProposal = Transaction({
             from: _from,
@@ -56,9 +56,11 @@ contract TransactionManager {
 
     function tm_addTransactionSignature(
         uint64 _transactionNonce,
-        bytes memory _signature
+        bytes memory _transactionProposalSignature
     ) internal {
-        transactions[_transactionNonce].signatures.push(_signature);
+        transactions[_transactionNonce].signatures.push(
+            _transactionProposalSignature
+        );
 
         emit TransactionSignatureAdded(_transactionNonce);
     }

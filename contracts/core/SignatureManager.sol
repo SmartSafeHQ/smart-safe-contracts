@@ -20,11 +20,11 @@ contract SignatureManager is EIP712 {
     function checkTransactionSignature(
         address _signer,
         bytes32 _hashedTransactionProposal,
-        bytes memory _signature
+        bytes memory _transactionProposalSignature
     ) internal pure returns (address) {
         address transactionSigner = ECDSA.recover(
             _hashedTransactionProposal,
-            _signature
+            _transactionProposalSignature
         );
 
         if (_signer != transactionSigner) {
