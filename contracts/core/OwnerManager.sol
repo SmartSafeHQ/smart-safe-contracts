@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-contract OwnerManager {
+import {SelfAuthorized} from "../utils/SelfAuthorized.sol";
+
+contract OwnerManager is SelfAuthorized {
     error NotAnOwner();
     error InvalidAddress();
     error OutOfBoundsThreshold();
@@ -13,10 +15,10 @@ contract OwnerManager {
 
     uint8 public threshold = 1;
 
-    address internal constant LINKED_LIST = address(0x1);
+    address private constant LINKED_LIST = address(0x1);
 
     uint8 public totalOwners;
-    mapping(address => address) public owners;
+    mapping(address => address) private owners;
 
     function isValidAddress(address _address) private view {
         if (
@@ -51,7 +53,10 @@ contract OwnerManager {
         threshold = _threshold;
     }
 
-    function addNewOwner(address _newOwner, uint8 _newThreshold) external {
+    function addNewOwner(
+        address _newOwner,
+        uint8 _newThreshold
+    ) public authorized {
         isValidAddress(_newOwner);
 
         owners[_newOwner] = owners[LINKED_LIST];
@@ -63,7 +68,7 @@ contract OwnerManager {
         if (_newThreshold != threshold) changeThreshold(_newThreshold);
     }
 
-    function removeOwner(address _prevOwner, address _owner) external {
+    function removeOwner(address _prevOwner, address _owner) public authorized {
         require(owners[_owner] != address(0));
 
         owners[_prevOwner] = owners[_owner];
@@ -74,7 +79,7 @@ contract OwnerManager {
         emit OwnerRemoved(_owner);
     }
 
-    function changeThreshold(uint8 _newThreshold) public {
+    function changeThreshold(uint8 _newThreshold) public authorized {
         if (_newThreshold < 1 || _newThreshold > totalOwners) {
             revert OutOfBoundsThreshold();
         }
