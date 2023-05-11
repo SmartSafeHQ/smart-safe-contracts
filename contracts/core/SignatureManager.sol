@@ -8,9 +8,9 @@ contract SignatureManager is EIP712 {
     struct Signature {
         address to;
         address from;
+        uint64 transactionNonce;
         uint256 value;
         bytes data;
-        uint64 transactionNonce;
     }
 
     error InvalidSigner();

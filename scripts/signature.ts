@@ -36,16 +36,16 @@ async function signTypedMessage(
     Signature: [
       { name: "to", type: "address" },
       { name: "from", type: "address" },
+      { name: "transactionNonce", type: "uint64" },
       { name: "value", type: "uint256" },
       { name: "data", type: "bytes" },
-      { name: "transactionNonce", type: "uint64" },
     ],
   };
 
   const value = {
     from: await signer.getAddress(),
-    to: "0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005", // ERC20 contract address
-    value: ethers.utils.parseUnits("1", "ether").toString(), // 1 ETH
+    to: "0x9396B453Fad71816cA9f152Ae785276a1D578492", // ERC20 contract address
+    value: "0", // ethers.utils.parseUnits("1", "ether").toString(), // 1 ETH
     data: "0xa9059cbb000000000000000000000000ab8483f64d9c6d1ecf9b849ae677dd3315835cb20000000000000000000000000000000000000000000000000de0b6b3a7640000",
     transactionNonce: nonce,
   };

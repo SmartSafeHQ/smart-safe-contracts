@@ -2,21 +2,20 @@
 pragma solidity ^0.8.19;
 
 contract TransactionManager {
-    uint64 public transactionNonce = 0;
-
     event TransactionSignatureAdded(uint64 indexed);
     event TransactionProposalCreated(uint64 indexed);
 
     struct Transaction {
         address from;
         address to;
-        uint256 value;
-        uint64 transactionNonce;
         bool isActive;
+        uint64 transactionNonce;
+        uint256 value;
         bytes data;
         bytes[] signatures;
     }
 
+    uint64 public transactionNonce = 0;
     mapping(uint64 => Transaction) private transactions;
 
     function getTransaction(
