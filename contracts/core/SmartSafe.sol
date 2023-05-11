@@ -24,11 +24,14 @@ contract SmartSafe is
         OwnerManager.setupOwners(_owners, _threshold);
     }
 
-    modifier checkTransaction(
+    // Although using the `modifier` keyword would be considered more semantic,
+    // it increases the final code bytecode. Using a function is cheaper.
+    // By doing this simple modification, it has reduced the final bytecode in 2kb.
+    function checkTransaction(
         address _transactionProposalSigner,
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
-    ) {
+    ) private view {
         OwnerManager.isSafeOwner(_transactionProposalSigner);
 
         SignatureManager.checkTransactionSignature(
@@ -36,21 +39,23 @@ contract SmartSafe is
             _hashedTransactionProposal,
             _transactionProposalSignature
         );
-
-        _;
     }
 
-    function executeTransaction(
-        uint64 _transactionNonce
-    ) external nonReentrant {
+    function executeTransaction(uint64 _transactionNonce)
+        external
+        nonReentrant
+    {
         TransactionManager.Transaction
             storage proposedTransaction = TransactionManager.getTransaction(
                 _transactionNonce
             );
 
-        uint64 requiredTransactionNonce = TransactionManager.transactionNonce;
+        // By requiring that the `proposedTransactionNonce` is equal to
+        // the latest proposed transaction `requiredTransactionNonce` we ensure
+        // all transactions follow a linear order of execution.
+        uint64 requiredTransactionNonce = (TransactionManager.transactionNonce - 1);
         uint64 proposedTransactionNonce = proposedTransaction.transactionNonce;
-        if (proposedTransactionNonce != requiredTransactionNonce) {
+        if (proposedTransactionNonce == requiredTransactionNonce) {
             revert TransactionNonceError(
                 requiredTransactionNonce,
                 proposedTransactionNonce
@@ -84,14 +89,13 @@ contract SmartSafe is
         address _transactionProposalSigner,
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
-    )
-        external
+    ) external {
         checkTransaction(
             _transactionProposalSigner,
             _hashedTransactionProposal,
             _transactionProposalSignature
-        )
-    {
+        );
+
         TransactionManager.tm_createTransactionProposal(
             _from,
             _to,
@@ -106,14 +110,13 @@ contract SmartSafe is
         address _transactionProposalSigner,
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
-    )
-        external
+    ) external {
         checkTransaction(
             _transactionProposalSigner,
             _hashedTransactionProposal,
             _transactionProposalSignature
-        )
-    {
+        );
+
         uint8 signaturesCount = uint8(
             TransactionManager
                 .getTransactionSignatures(_transactionNonce)
