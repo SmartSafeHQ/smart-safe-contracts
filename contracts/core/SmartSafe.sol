@@ -13,9 +13,10 @@ contract SmartSafe is
     TransactionManager,
     SignatureManager
 {
+    error UnsufficientSignatures();
     error SignaturesAlreadyCollected();
     error TransactionExecutionFailed(bytes);
-    error UnsuficientSignatures();
+    error TransactionNonceError(uint64 required, uint64 received);
 
     event TransactionExecutionSucceeded(uint64);
 
@@ -43,12 +44,21 @@ contract SmartSafe is
         uint64 _transactionNonce
     ) external nonReentrant {
         TransactionManager.Transaction
-            memory proposedTransaction = TransactionManager.getTransaction(
+            storage proposedTransaction = TransactionManager.getTransaction(
                 _transactionNonce
             );
 
+        uint64 requiredTransactionNonce = TransactionManager.transactionNonce;
+        uint64 proposedTransactionNonce = proposedTransaction.transactionNonce;
+        if (proposedTransactionNonce != requiredTransactionNonce) {
+            revert TransactionNonceError(
+                requiredTransactionNonce,
+                proposedTransactionNonce
+            );
+        }
+
         if (proposedTransaction.signatures.length != OwnerManager.threshold) {
-            revert UnsuficientSignatures();
+            revert UnsufficientSignatures();
         }
 
         (bool success, bytes memory data) = proposedTransaction.to.call{
@@ -58,6 +68,8 @@ contract SmartSafe is
         if (!success && data.length > 0) {
             revert TransactionExecutionFailed(data);
         }
+
+        proposedTransaction.isActive = false;
 
         emit TransactionExecutionSucceeded(_transactionNonce);
     }

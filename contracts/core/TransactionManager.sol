@@ -4,13 +4,15 @@ pragma solidity ^0.8.19;
 contract TransactionManager {
     uint64 public transactionNonce = 0;
 
-    event TransactionProposalCreated(uint64 indexed);
     event TransactionSignatureAdded(uint64 indexed);
+    event TransactionProposalCreated(uint64 indexed);
 
     struct Transaction {
         address from;
         address to;
         uint256 value;
+        uint64 transactionNonce;
+        bool isActive;
         bytes data;
         bytes[] signatures;
     }
@@ -19,7 +21,7 @@ contract TransactionManager {
 
     function getTransaction(
         uint64 _transactionNonce
-    ) internal view returns (Transaction memory) {
+    ) internal view returns (Transaction storage) {
         return transactions[_transactionNonce];
     }
 
@@ -43,6 +45,8 @@ contract TransactionManager {
             from: _from,
             to: _to,
             value: _value,
+            transactionNonce: transactionNonce,
+            isActive: true,
             data: _data,
             signatures: signatures
         });
