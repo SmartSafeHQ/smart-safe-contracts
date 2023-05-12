@@ -41,10 +41,11 @@ contract SmartSafe is
         );
     }
 
-    function executeTransaction(uint64 _transactionNonce)
-        external
-        nonReentrant
-    {
+    function executeTransaction(
+        uint64 _transactionNonce
+    ) external nonReentrant {
+        OwnerManager.isSafeOwner(msg.sender);
+
         TransactionManager.Transaction
             storage proposedTransaction = TransactionManager.getTransaction(
                 _transactionNonce
@@ -53,7 +54,8 @@ contract SmartSafe is
         // By requiring that the `proposedTransactionNonce` is equal to
         // the latest proposed transaction `requiredTransactionNonce` we ensure
         // all transactions follow a linear order of execution.
-        uint64 requiredTransactionNonce = (TransactionManager.transactionNonce - 1);
+        uint64 requiredTransactionNonce = (TransactionManager.transactionNonce -
+            1);
         uint64 proposedTransactionNonce = proposedTransaction.transactionNonce;
         if (proposedTransactionNonce == requiredTransactionNonce) {
             revert TransactionNonceError(
