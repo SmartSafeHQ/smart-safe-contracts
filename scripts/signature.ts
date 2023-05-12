@@ -44,9 +44,9 @@ async function signTypedMessage(
 
   const value = {
     from: await signer.getAddress(),
-    to: "0x9396B453Fad71816cA9f152Ae785276a1D578492", // ERC20 contract address
+    to: "0x3c725134d74D5c45B4E4ABd2e5e2a109b5541288", // ERC20 contract address
     value: "0", // ethers.utils.parseUnits("1", "ether").toString(), // 1 ETH
-    data: "0xa9059cbb000000000000000000000000ab8483f64d9c6d1ecf9b849ae677dd3315835cb20000000000000000000000000000000000000000000000000de0b6b3a7640000",
+    data: "0x00b9573b000000000000000000000000617f2e2fd72fd9d5503197092ac168c91465e7f20000000000000000000000000000000000000000000000000000000000000002",
     transactionNonce: nonce,
   };
 

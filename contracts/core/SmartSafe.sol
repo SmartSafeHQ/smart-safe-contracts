@@ -57,7 +57,7 @@ contract SmartSafe is
         uint64 requiredTransactionNonce = (TransactionManager.transactionNonce -
             1);
         uint64 proposedTransactionNonce = proposedTransaction.transactionNonce;
-        if (proposedTransactionNonce == requiredTransactionNonce) {
+        if (!(proposedTransactionNonce == requiredTransactionNonce)) {
             revert TransactionNonceError(
                 requiredTransactionNonce,
                 proposedTransactionNonce
