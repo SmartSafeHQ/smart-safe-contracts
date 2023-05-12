@@ -64,7 +64,9 @@ contract SmartSafe is
             );
         }
 
-        if (proposedTransaction.signatures.length != OwnerManager.threshold) {
+        if (
+            !(proposedTransaction.signatures.length >= OwnerManager.threshold)
+        ) {
             revert UnsufficientSignatures();
         }
 
