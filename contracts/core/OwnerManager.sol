@@ -93,7 +93,7 @@ contract OwnerManager is SelfAuthorized {
     function getOwners() public view returns (address[] memory) {
         address[] memory listOfOwners = new address[](totalOwners);
 
-        uint256 index = 0;
+        uint8 index = 0;
         address currentOwner = owners[LINKED_LIST];
         while (currentOwner != LINKED_LIST) {
             listOfOwners[index] = currentOwner;

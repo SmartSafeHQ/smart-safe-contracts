@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 contract SignatureManager is EIP712 {
+    error InvalidSigner();
+
     struct Signature {
         address to;
         address from;
@@ -12,8 +14,6 @@ contract SignatureManager is EIP712 {
         uint256 value;
         bytes data;
     }
-
-    error InvalidSigner();
 
     constructor() EIP712("Smart Safe Signature Manager", "1.0.0") {}
 
