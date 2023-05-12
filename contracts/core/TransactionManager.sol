@@ -24,6 +24,28 @@ contract TransactionManager {
         return transactions[_transactionNonce];
     }
 
+    function getTransactions(
+        uint32 _page
+    ) external view returns (Transaction[] memory) {
+        uint8 maxLimit = 10;
+        uint64 startIndex = _page * maxLimit;
+        uint64 endIndex = startIndex + maxLimit;
+        if (endIndex > transactionNonce) {
+            endIndex = transactionNonce;
+        }
+        uint64 length = endIndex - startIndex;
+        Transaction[] memory listOfTransactions = new Transaction[](length);
+
+        for (uint64 i = 0; i < length; i++) {
+            if (startIndex + i >= transactionNonce) {
+                break;
+            }
+            listOfTransactions[i] = transactions[startIndex + i];
+        }
+
+        return listOfTransactions;
+    }
+
     function getTransactionSignatures(
         uint64 _transactionNonce
     ) internal view returns (bytes[] memory) {
