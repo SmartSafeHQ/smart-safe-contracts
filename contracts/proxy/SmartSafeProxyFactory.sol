@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import {SmartSafeProxy} from "./SmartSafeProxy.sol";
 
@@ -55,7 +55,9 @@ contract SmartSafeProxyFactory {
         bytes32 salt = computeSalt(_smartSafe);
         address predictedAddress = computeAddress(_smartSafe);
 
-        SmartSafeProxy newlyDeployedContract = new SmartSafeProxy{salt: salt}(_smartSafe);
+        SmartSafeProxy newlyDeployedContract = new SmartSafeProxy{salt: salt}(
+            _smartSafe
+        );
 
         require(address(newlyDeployedContract) == predictedAddress);
 

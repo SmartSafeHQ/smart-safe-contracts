@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import {SmartSafe} from "../core/SmartSafe.sol";
 
@@ -13,11 +13,10 @@ contract SmartSafeFactory {
         return keccak256(abi.encode(nonce, _owner));
     }
 
-    function computeAddress(address[] calldata _owners, uint8 _threshold)
-        public
-        view
-        returns (address)
-    {
+    function computeAddress(
+        address[] calldata _owners,
+        uint8 _threshold
+    ) public view returns (address) {
         bytes32 salt = computeSalt(_owners[0]);
 
         return
@@ -42,9 +41,10 @@ contract SmartSafeFactory {
             );
     }
 
-    function deploySmartSafe(address[] calldata _owners, uint8 _threshold)
-        external
-    {
+    function deploySmartSafe(
+        address[] calldata _owners,
+        uint8 _threshold
+    ) external {
         bytes32 salt = computeSalt(_owners[0]);
         address predictedAddress = computeAddress(_owners, _threshold);
 

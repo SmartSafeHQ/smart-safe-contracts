@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -86,12 +86,12 @@ contract SmartSafe is
     }
 
     function createTransactionProposal(
-        // transaction props
+        // transaction related
         address _from,
         address _to,
         uint256 _value,
         bytes calldata _data,
-        // signature
+        // signature related
         address _transactionProposalSigner,
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
