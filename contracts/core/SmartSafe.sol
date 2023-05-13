@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import {OwnerManager} from "./OwnerManager.sol";
+import {FallbackManager} from "./FallbackManager.sol";
 import {SignatureManager} from "./SignatureManager.sol";
 import {TransactionManager} from "./TransactionManager.sol";
 
@@ -11,7 +12,8 @@ contract SmartSafe is
     ReentrancyGuard,
     OwnerManager,
     TransactionManager,
-    SignatureManager
+    SignatureManager,
+    FallbackManager
 {
     error UnsufficientSignatures();
     error SignaturesAlreadyCollected();
