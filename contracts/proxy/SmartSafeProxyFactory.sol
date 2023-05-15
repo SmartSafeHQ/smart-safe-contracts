@@ -1,68 +1,109 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {SmartSafeProxy} from "./SmartSafeProxy.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract SmartSafeProxyFactory {
-    address public immutable owner;
-    uint64 internal nonce = 0;
+    error DeployFailed(bytes);
+    error CallerIsNotAnOwner();
+    error AddressIsNotAContract();
+    error MismatchedAddress(address required, address received);
 
+    event Called(bytes);
     event Deployed(address indexed);
 
-    constructor(address _owner) {
+    address private owner;
+    uint64 private nonce = 0;
+    address public smartSafeImplementation;
+
+    constructor(address _owner, address _smartSafeImplementation) {
         owner = _owner;
+        smartSafeImplementation = _smartSafeImplementation;
     }
 
-    modifier onlyOwner() {
-        require(
-            msg.sender == owner,
-            "[SmartSafeFactory#onlyOwner]: Caller is not the owner."
-        );
+    function renounceOwnernship(address _newOwner) external {
+        onlyOwner(msg.sender);
 
-        _;
+        owner = _newOwner;
+    }
+
+    function setSmartSafeImplementation(
+        address _newSmartSafeImplementation
+    ) external {
+        onlyOwner(msg.sender);
+
+        if (isContract(_newSmartSafeImplementation) == false) {
+            revert AddressIsNotAContract();
+        }
+
+        smartSafeImplementation = _newSmartSafeImplementation;
     }
 
     function computeSalt(address _owner) private view returns (bytes32) {
-        return keccak256(abi.encode(nonce, _owner));
+        return bytes32(uint256(uint160(_owner) + nonce));
     }
 
     function computeAddress(address _owner) public view returns (address) {
         bytes32 salt = computeSalt(_owner);
 
         return
-            address(
-                uint160(
-                    uint256(
-                        keccak256(
-                            abi.encodePacked(
-                                bytes1(0xff),
-                                address(this),
-                                salt,
-                                keccak256(
-                                    abi.encodePacked(
-                                        type(SmartSafeProxy).creationCode,
-                                        abi.encode(_owner)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                )
-            );
+            Clones.predictDeterministicAddress(smartSafeImplementation, salt);
     }
 
-    function deploySmartSafeProxy(address _smartSafe) external onlyOwner {
-        bytes32 salt = computeSalt(_smartSafe);
-        address predictedAddress = computeAddress(_smartSafe);
+    function deploySmartSafeProxy(
+        address[] calldata _owners,
+        uint8 _threshold
+    ) external payable {
+        if (isContract(smartSafeImplementation) == false) {
+            revert AddressIsNotAContract();
+        }
 
-        SmartSafeProxy newlyDeployedContract = new SmartSafeProxy{salt: salt}(
-            _smartSafe
+        bytes32 salt = computeSalt(_owners[0]);
+        address predictedAddress = computeAddress(_owners[0]);
+        address deployedProxyAddress = Clones.cloneDeterministic(
+            smartSafeImplementation,
+            salt
         );
 
-        require(address(newlyDeployedContract) == predictedAddress);
+        if (deployedProxyAddress != predictedAddress) {
+            revert MismatchedAddress(predictedAddress, deployedProxyAddress);
+        }
 
-        nonce++;
+        bytes memory initializeSmartSafeData = abi.encodeWithSignature(
+            "setupOwners(address[],uint8)",
+            _owners,
+            _threshold
+        );
+        (bool success, bytes memory returndata) = deployedProxyAddress.call{
+            value: msg.value
+        }(initializeSmartSafeData);
 
-        emit Deployed(address(newlyDeployedContract));
+        if (!success && returndata.length > 0) {
+            revert DeployFailed(returndata);
+        }
+
+        emit Deployed(deployedProxyAddress);
+    }
+
+    function isContract(address _address) private view returns (bool) {
+        return _address.code.length > 0;
+    }
+
+    function onlyOwner(address _owner) private view {
+        if (_owner != owner) {
+            revert CallerIsNotAnOwner();
+        }
+    }
+
+    function callImpl(bytes calldata _data, address _impl) external payable {
+        (bool success, bytes memory returndata) = _impl.call{value: msg.value}(
+            _data
+        );
+
+        if (!success && returndata.length > 0) {
+            revert DeployFailed(returndata);
+        }
+
+        emit Called(returndata);
     }
 }
