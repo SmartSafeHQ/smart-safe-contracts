@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import {OwnerManager} from "./OwnerManager.sol";
@@ -9,6 +10,7 @@ import {SignatureManager} from "./SignatureManager.sol";
 import {TransactionManager} from "./TransactionManager.sol";
 
 contract SmartSafe is
+    Initializable,
     ReentrancyGuard,
     OwnerManager,
     TransactionManager,
@@ -22,30 +24,43 @@ contract SmartSafe is
 
     event TransactionExecutionSucceeded(uint64);
 
-    constructor(address[] memory _owners, uint8 _threshold) {
-        OwnerManager.setupOwners(_owners, _threshold);
+    function setupOwners(address[] memory _owners, uint8 _threshold)
+        external
+        initializer
+    {
+        OwnerManager.ow_setupOwners(_owners, _threshold);
     }
 
     // Although using the `modifier` keyword would be considered more semantic,
     // it increases the final code bytecode. Using a function is cheaper.
     // By doing this simple modification, it has reduced the final bytecode in 2kb.
     function checkTransaction(
+        // transaction related
+        address _from,
+        address _to,
+        uint256 _value,
+        bytes memory _data,
+        // signature related
         address _transactionProposalSigner,
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
     ) private view {
         OwnerManager.isSafeOwner(_transactionProposalSigner);
 
+        uint64 transactionNonce = TransactionManager.transactionNonce;
         SignatureManager.checkTransactionSignature(
+            _from,
+            _to,
+            transactionNonce,
+            _value,
+            _data,
             _transactionProposalSigner,
             _hashedTransactionProposal,
             _transactionProposalSignature
         );
     }
 
-    function executeTransaction(
-        uint64 _transactionNonce
-    ) external nonReentrant {
+    function executeTransaction(uint64 _transactionNonce) public nonReentrant {
         OwnerManager.isSafeOwner(msg.sender);
 
         TransactionManager.Transaction
@@ -59,16 +74,18 @@ contract SmartSafe is
         uint64 requiredTransactionNonce = (TransactionManager.transactionNonce -
             1);
         uint64 proposedTransactionNonce = proposedTransaction.transactionNonce;
-        if (!(proposedTransactionNonce == requiredTransactionNonce)) {
+        if (
+            proposedTransactionNonce != requiredTransactionNonce ||
+            !proposedTransaction.isActive
+        ) {
             revert TransactionNonceError(
                 requiredTransactionNonce,
                 proposedTransactionNonce
             );
         }
 
-        if (
-            !(proposedTransaction.signatures.length >= OwnerManager.threshold)
-        ) {
+        uint8 signaturesCount = uint8(proposedTransaction.signatures.length);
+        if (signaturesCount < OwnerManager.threshold) {
             revert UnsufficientSignatures();
         }
 
@@ -97,6 +114,10 @@ contract SmartSafe is
         bytes memory _transactionProposalSignature
     ) external {
         checkTransaction(
+            _from,
+            _to,
+            _value,
+            _data,
             _transactionProposalSigner,
             _hashedTransactionProposal,
             _transactionProposalSignature
@@ -109,6 +130,16 @@ contract SmartSafe is
             _data,
             _transactionProposalSignature
         );
+
+        // If there's only one owner, execute the transaction right away;
+        // This way users don't need to spend gas with two transactions
+        // (proposal + execution);
+        if (OwnerManager.threshold == 1) {
+            uint64 currentTransactionNonce = TransactionManager
+                .transactionNonce - 1;
+
+            executeTransaction(currentTransactionNonce);
+        }
     }
 
     function addTransactionSignature(
@@ -117,7 +148,14 @@ contract SmartSafe is
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
     ) external {
+        TransactionManager.Transaction memory transaction = TransactionManager
+            .getTransaction(_transactionNonce);
+
         checkTransaction(
+            transaction.from,
+            transaction.to,
+            transaction.value,
+            transaction.data,
             _transactionProposalSigner,
             _hashedTransactionProposal,
             _transactionProposalSignature

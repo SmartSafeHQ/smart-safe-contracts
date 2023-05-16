@@ -69,6 +69,10 @@ contract SmartSafeProxyFactory {
             revert MismatchedAddress(predictedAddress, deployedProxyAddress);
         }
 
+        // TODO:
+        // it's possible to hard-code the "setupOwners(address[],uint8)" string
+        // and just encode it with the rest of the parameters;
+        // it will save some gas;
         bytes memory initializeSmartSafeData = abi.encodeWithSignature(
             "setupOwners(address[],uint8)",
             _owners,

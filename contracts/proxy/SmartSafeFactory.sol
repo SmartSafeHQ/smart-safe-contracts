@@ -48,14 +48,12 @@ contract SmartSafeFactory {
         bytes32 salt = computeSalt(_owners[0]);
         address predictedAddress = computeAddress(_owners, _threshold);
 
-        SmartSafe newlyDeployedContract = new SmartSafe{salt: salt}(
-            _owners,
-            _threshold
-        );
+        SmartSafe newlyDeployedContract = new SmartSafe{salt: salt}();
 
         if (address(newlyDeployedContract) != predictedAddress) {
             revert InvalidContractAddress();
         }
+        newlyDeployedContract.setupOwners(_owners, _threshold);
 
         nonce++;
 

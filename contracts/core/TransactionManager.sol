@@ -52,6 +52,10 @@ contract TransactionManager {
         return transactions[_transactionNonce].signatures;
     }
 
+    function deleteTransaction(uint64 _transactionNonce) internal {
+        delete transactions[_transactionNonce];
+    }
+
     function tm_createTransactionProposal(
         address _from,
         address _to,
