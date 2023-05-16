@@ -3,6 +3,9 @@ pragma solidity ^0.8.20;
 
 import {SmartSafe} from "../core/SmartSafe.sol";
 
+/**
+ * @author Ricardo Passos - @ricardo-passos
+ */
 contract SmartSafeFactory {
     uint64 internal nonce = 0;
 

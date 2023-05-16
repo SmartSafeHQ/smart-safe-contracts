@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+/**
+ * @author Ricardo Passos - @ricardo-passos
+ */
 contract TransactionManager {
     event TransactionSignatureAdded(uint64 indexed);
     event TransactionProposalCreated(uint64 indexed);

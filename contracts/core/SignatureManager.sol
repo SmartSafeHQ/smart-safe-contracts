@@ -4,6 +4,9 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "hardhat/console.sol";
 
+/**
+ * @author Ricardo Passos - @ricardo-passos
+ */
 contract SignatureManager is EIP712 {
     error InvalidSigner();
     error InvalidTransactionHash();

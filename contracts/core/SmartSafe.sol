@@ -9,6 +9,9 @@ import {FallbackManager} from "./FallbackManager.sol";
 import {SignatureManager} from "./SignatureManager.sol";
 import {TransactionManager} from "./TransactionManager.sol";
 
+/**
+ * @author Ricardo Passos - @ricardo-passos
+ */
 contract SmartSafe is
     Initializable,
     ReentrancyGuard,
@@ -24,10 +27,10 @@ contract SmartSafe is
 
     event TransactionExecutionSucceeded(uint64);
 
-    function setupOwners(address[] memory _owners, uint8 _threshold)
-        external
-        initializer
-    {
+    function setupOwners(
+        address[] memory _owners,
+        uint8 _threshold
+    ) external initializer {
         OwnerManager.ow_setupOwners(_owners, _threshold);
     }
 

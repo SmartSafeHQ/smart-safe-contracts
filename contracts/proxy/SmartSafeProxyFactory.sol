@@ -3,6 +3,9 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
+/**
+ * @author Ricardo Passos - @ricardo-passos
+ */
 contract SmartSafeProxyFactory {
     error DeployFailed(bytes);
     error CallerIsNotAnOwner();

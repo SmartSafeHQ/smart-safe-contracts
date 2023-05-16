@@ -3,6 +3,9 @@ pragma solidity ^0.8.20;
 
 import {SelfAuthorized} from "../utils/SelfAuthorized.sol";
 
+/**
+ * @author Ricardo Passos - @ricardo-passos
+ */
 contract OwnerManager is SelfAuthorized {
     error NotAnOwner();
     error InvalidAddress();
