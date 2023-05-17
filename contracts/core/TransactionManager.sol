@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 /**
+ * @title This contract manages the transactions created by users.
  * @author Ricardo Passos - @ricardo-passos
  */
 contract TransactionManager {

@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 /**
+ * @title This factory deploys proxies that point to the Smart Safe. It leverages the EIP 1167.
  * @author Ricardo Passos - @ricardo-passos
  */
 contract SmartSafeProxyFactory {

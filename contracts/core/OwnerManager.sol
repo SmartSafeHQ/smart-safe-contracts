@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {SelfAuthorized} from "../utils/SelfAuthorized.sol";
 
 /**
+ * @title This contract manages users who owns a Smart Safe.
  * @author Ricardo Passos - @ricardo-passos
  */
 contract OwnerManager is SelfAuthorized {

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 /**
+ * @title This contract only manages the network native tokens sent to a Smart Safe.
  * @author Ricardo Passos - @ricardo-passos
  */
 contract FallbackManager {

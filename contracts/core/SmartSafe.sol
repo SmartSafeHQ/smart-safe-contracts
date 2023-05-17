@@ -10,6 +10,7 @@ import {SignatureManager} from "./SignatureManager.sol";
 import {TransactionManager} from "./TransactionManager.sol";
 
 /**
+ * @title A multi-signature safe to secure digital assets.
  * @author Ricardo Passos - @ricardo-passos
  */
 contract SmartSafe is
@@ -27,6 +28,12 @@ contract SmartSafe is
 
     event TransactionExecutionSucceeded(uint64);
 
+    /**
+     * @dev
+     * - This function essentially initializes a Smart Safe after user
+     * deploys a proxy.
+     * - User can optionally send network native tokens (ETH, BNB, etc).
+     */
     function setupOwners(
         address[] memory _owners,
         uint8 _threshold
@@ -42,9 +49,12 @@ contract SmartSafe is
         OwnerManager.ow_setupOwners(_owners, _threshold);
     }
 
-    // Although using the `modifier` keyword would be considered more semantic,
-    // it increases the final code bytecode. Using a function is cheaper.
-    // By doing this simple modification, it has reduced the final bytecode in 2kb.
+    /**
+     * @dev
+     * Although the use of the `modifier` keyword is considered semantically correct,
+     * the final bytecode gets larger. Using a function is cheaper.
+     * Making this simple modification reduced the final bytecode by 2kb.
+     */
     function checkTransaction(
         // transaction related
         address _from,

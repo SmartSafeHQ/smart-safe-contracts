@@ -4,7 +4,10 @@ pragma solidity ^0.8.19;
 import {SmartSafe} from "../core/SmartSafe.sol";
 
 /**
+ * @title This factory deploys Smart Safe copies.
  * @author Ricardo Passos - @ricardo-passos
+ * @notice The gas fee for deploying a Smart Safe copy is not cheap. 
+ * Thus, this contract is not used anywhere else. It's here only for reference.
  */
 contract SmartSafeFactory {
     uint64 internal nonce = 0;
