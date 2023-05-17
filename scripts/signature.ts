@@ -1,5 +1,7 @@
 import { ethers } from "hardhat";
+import { randomBytes } from "node:crypto";
 
+import SMART_SAFE_ABI from "./utils/SmartSafeABI.json";
 import type { SmartSafe } from "../typechain-types";
 import type { SignerWithAddress } from "../node_modules/@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
@@ -34,6 +36,16 @@ function hashString(data: string) {
   return ethers.utils.keccak256(stringToBytes);
 }
 
+function calculateSalt() {
+  return ethers.utils.keccak256(randomBytes(32));
+}
+
+function parseContractErrorEvent() {
+  const iface = new ethers.utils.Interface(SMART_SAFE_ABI);
+
+  return iface.parseError("0x638b87a1");
+}
+
 function getHashOfSignatureStruct(
   from: string,
   to: string,
@@ -49,7 +61,7 @@ function getHashOfSignatureStruct(
     ["bytes32", "address", "address", "uint64", "uint256", "bytes32"],
     [signatureStructHash, from, to, transactioNonce, value, data]
   );
-  
+
   const hashedEncodedStruct = ethers.utils.keccak256(signatureStructEncoded);
 
   return { hashedEncodedStruct };
@@ -65,7 +77,7 @@ async function signTypedMessage(
     version: hashString("1.0.0"),
     chainId: 1,
     verifyingContract:
-      "0x047b37Ef4d76C2366F795Fb557e3c15E0607b7d8" || verifyingContract,
+      "0x3c725134d74D5c45B4E4ABd2e5e2a109b5541288" || verifyingContract,
   };
 
   const typeHash = hashString(
@@ -87,12 +99,10 @@ async function signTypedMessage(
 
   const { hashedEncodedStruct } = getHashOfSignatureStruct(
     "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
-    "0x8207D032322052AfB9Bf1463aF87fd0c0097EDDE",
+    "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2",
     nonce,
-    "0",
-    ethers.utils.keccak256(
-      "0xa9059cbb0000000000000000000000005b38da6a701c568545dcfcb03fcb875f56beddc40000000000000000000000000000000000000000000000000de0b6b3a7640000"
-    )
+    ethers.utils.parseEther("1").toString(),
+    ethers.utils.keccak256("0x")
   );
 
   const typedDataHash = ethers.utils.keccak256(
