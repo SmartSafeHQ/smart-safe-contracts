@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import "hardhat/console.sol";
 
 /**
  * @author Ricardo Passos - @ricardo-passos
@@ -76,13 +75,10 @@ contract SignatureManager is EIP712 {
             _value,
             keccak256(_data)
         );
-        console.logBytes(encodedStruct);
 
         bytes32 hashedEncodedStruct = keccak256(encodedStruct);
-        console.logBytes32(hashedEncodedStruct);
 
         bytes32 typedData = EIP712._hashTypedDataV4(hashedEncodedStruct);
-        console.logBytes32(typedData);
 
         return typedData;
     }
