@@ -38,10 +38,6 @@ contract OwnerManager is SelfAuthorized {
         address[] memory _owners,
         uint8 _threshold
     ) internal {
-        if (_threshold > _owners.length) {
-            revert OutOfBoundsThreshold();
-        }
-
         address currentOwner = LINKED_LIST;
         for (uint8 i = 0; i < _owners.length; i++) {
             address owner = _owners[i];

@@ -30,7 +30,15 @@ contract SmartSafe is
     function setupOwners(
         address[] memory _owners,
         uint8 _threshold
-    ) external initializer {
+    ) external payable initializer {
+        if (
+            _owners.length == 0 ||
+            _threshold == 0 ||
+            _threshold > _owners.length
+        ) {
+            revert OwnerManager.OutOfBoundsThreshold();
+        }
+
         OwnerManager.ow_setupOwners(_owners, _threshold);
     }
 
@@ -115,7 +123,7 @@ contract SmartSafe is
         address _transactionProposalSigner,
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
-    ) external {
+    ) external payable {
         checkTransaction(
             _from,
             _to,
@@ -151,6 +159,16 @@ contract SmartSafe is
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
     ) external {
+        uint8 signaturesCount = uint8(
+            TransactionManager
+                .getTransactionSignatures(_transactionNonce)
+                .length
+        );
+
+        if ((signaturesCount + 1) > OwnerManager.threshold) {
+            revert SignaturesAlreadyCollected();
+        }
+
         TransactionManager.Transaction memory transaction = TransactionManager
             .getTransaction(_transactionNonce);
 
@@ -163,16 +181,6 @@ contract SmartSafe is
             _hashedTransactionProposal,
             _transactionProposalSignature
         );
-
-        uint8 signaturesCount = uint8(
-            TransactionManager
-                .getTransactionSignatures(_transactionNonce)
-                .length
-        );
-
-        if ((signaturesCount + 1) > OwnerManager.threshold) {
-            revert SignaturesAlreadyCollected();
-        }
 
         TransactionManager.tm_addTransactionSignature(
             _transactionNonce,
