@@ -60,7 +60,7 @@ contract TransactionManager {
         delete transactions[_transactionNonce];
     }
 
-    function tm_createTransactionProposal(
+    function createTransactionProposal(
         address _from,
         address _to,
         uint256 _value,
@@ -87,7 +87,7 @@ contract TransactionManager {
         emit TransactionProposalCreated(currentTransactionNonce);
     }
 
-    function tm_addTransactionSignature(
+    function addTransactionSignature(
         uint64 _transactionNonce,
         bytes memory _transactionProposalSignature
     ) internal {

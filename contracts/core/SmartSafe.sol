@@ -144,7 +144,7 @@ contract SmartSafe is
             _transactionProposalSignature
         );
 
-        TransactionManager.tm_createTransactionProposal(
+        TransactionManager.createTransactionProposal(
             _from,
             _to,
             _value,
@@ -192,7 +192,7 @@ contract SmartSafe is
             _transactionProposalSignature
         );
 
-        TransactionManager.tm_addTransactionSignature(
+        TransactionManager.addTransactionSignature(
             _transactionNonce,
             _transactionProposalSignature
         );
