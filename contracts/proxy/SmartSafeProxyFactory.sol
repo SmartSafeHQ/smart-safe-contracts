@@ -10,58 +10,63 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 contract SmartSafeProxyFactory {
     error DeployFailed(bytes);
     error CallerIsNotAnOwner();
-    error NotAValidSmartSafeImpl();
+    error AddressIsNotAContract();
     error MismatchedAddress(address required, address received);
 
     event Called(bytes);
     event Deployed(address indexed);
 
     address private owner;
+    uint64 private nonce = 0;
     address public smartSafeImplementation;
 
     constructor(address _owner, address _smartSafeImplementation) {
         owner = _owner;
-
-        if (isContract(_smartSafeImplementation) == false) {
-            revert NotAValidSmartSafeImpl();
-        }
-
         smartSafeImplementation = _smartSafeImplementation;
     }
 
     function renounceOwnernship(address _newOwner) external {
         onlyOwner(msg.sender);
 
+        if (isContract(smartSafeImplementation) == false) {
+            revert AddressIsNotAContract();
+        }
+
         owner = _newOwner;
     }
 
-    function setSmartSafeImplementation(
-        address _newSmartSafeImplementation
-    ) external {
+    function setSmartSafeImplementation(address _newSmartSafeImplementation)
+        external
+    {
         onlyOwner(msg.sender);
 
         if (isContract(_newSmartSafeImplementation) == false) {
-            revert NotAValidSmartSafeImpl();
+            revert AddressIsNotAContract();
         }
 
         smartSafeImplementation = _newSmartSafeImplementation;
     }
 
-    function computeAddress(bytes32 _salt) public view returns (address) {
-        return
-            Clones.predictDeterministicAddress(smartSafeImplementation, _salt);
+    function computeSalt(address _owner) private view returns (bytes32) {
+        return bytes32(uint256(uint160(_owner) + nonce));
     }
 
-    function deploySmartSafeProxy(
-        address[] calldata _owners,
-        uint8 _threshold,
-        bytes32 _salt
-    ) external payable {
-        address predictedAddress = computeAddress(_salt);
+    function computeAddress(address _owner) public view returns (address) {
+        bytes32 salt = computeSalt(_owner);
 
+        return
+            Clones.predictDeterministicAddress(smartSafeImplementation, salt);
+    }
+
+    function deploySmartSafeProxy(address[] calldata _owners, uint8 _threshold)
+        external
+        payable
+    {
+        bytes32 salt = computeSalt(_owners[0]);
+        address predictedAddress = computeAddress(_owners[0]);
         address deployedProxyAddress = Clones.cloneDeterministic(
             smartSafeImplementation,
-            _salt
+            salt
         );
 
         if (deployedProxyAddress != predictedAddress) {
@@ -80,6 +85,8 @@ contract SmartSafeProxyFactory {
         if (!success && returndata.length > 0) {
             revert DeployFailed(returndata);
         }
+
+        nonce++;
 
         emit Deployed(deployedProxyAddress);
     }
