@@ -75,9 +75,8 @@ async function signTypedMessage(
   const domain = {
     name: hashString("Smart Safe Signature Manager"),
     version: hashString("1.0.0"),
-    chainId: 1,
-    verifyingContract:
-      "0x3c725134d74D5c45B4E4ABd2e5e2a109b5541288" || verifyingContract,
+    chainId: 80001,
+    verifyingContract,
   };
 
   const typeHash = hashString(
@@ -98,8 +97,8 @@ async function signTypedMessage(
   );
 
   const { hashedEncodedStruct } = getHashOfSignatureStruct(
-    "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
-    "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2",
+    "0xb238ccC49e94dE201d2D5Cfc7050dD1F70eC5EA7", // always the Smart Safe address
+    "0x8E6f42979b5517206Cf9e69A969Fac961D1b36B7",
     nonce,
     ethers.utils.parseEther("1").toString(),
     ethers.utils.keccak256("0x")
@@ -124,13 +123,14 @@ async function main() {
   const signer2 = (await ethers.getSigners())[1];
 
   console.log("Signer address:", signer.address, "\n");
+  console.log("SALT", calculateSalt());
 
   const contract = await deployContract([signer.address], 1);
 
   const nonce = await getTransactioNonce(contract);
 
   const { signedTypedDataHash, typedDataHash } = await signTypedMessage(
-    contract.address,
+    "0xb238ccC49e94dE201d2D5Cfc7050dD1F70eC5EA7",
     signer,
     nonce
   );
