@@ -61,7 +61,6 @@ contract TransactionManager {
     }
 
     function createTransactionProposal(
-        address _from,
         address _to,
         uint256 _value,
         bytes calldata _data,
@@ -71,7 +70,7 @@ contract TransactionManager {
         signatures[0] = _transactionProposalSignature;
 
         Transaction memory transactionProposal = Transaction({
-            from: _from,
+            from: address(this),
             to: _to,
             value: _value,
             transactionNonce: transactionNonce,

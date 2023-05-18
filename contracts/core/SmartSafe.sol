@@ -57,7 +57,6 @@ contract SmartSafe is
      */
     function checkTransaction(
         // transaction related
-        address _from,
         address _to,
         uint256 _value,
         bytes memory _data,
@@ -70,7 +69,7 @@ contract SmartSafe is
 
         uint64 transactionNonce = TransactionManager.transactionNonce;
         SignatureManager.checkTransactionSignature(
-            _from,
+            address(this),
             _to,
             transactionNonce,
             _value,
@@ -125,7 +124,6 @@ contract SmartSafe is
 
     function createTransactionProposal(
         // transaction related
-        address _from,
         address _to,
         uint256 _value,
         bytes calldata _data,
@@ -135,7 +133,6 @@ contract SmartSafe is
         bytes memory _transactionProposalSignature
     ) external payable {
         checkTransaction(
-            _from,
             _to,
             _value,
             _data,
@@ -145,7 +142,6 @@ contract SmartSafe is
         );
 
         TransactionManager.createTransactionProposal(
-            _from,
             _to,
             _value,
             _data,
@@ -183,7 +179,6 @@ contract SmartSafe is
             .getTransaction(_transactionNonce);
 
         checkTransaction(
-            transaction.from,
             transaction.to,
             transaction.value,
             transaction.data,
