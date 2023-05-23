@@ -84,7 +84,7 @@ contract SmartSafe is
         OwnerManager.isSafeOwner(msg.sender);
 
         TransactionManager.Transaction
-            storage proposedTransaction = TransactionManager
+            memory proposedTransaction = TransactionManager
                 .getFromTransactionQueue(_transactionNonce);
 
         // By requiring that the `proposedTransactionNonce` is equal to
