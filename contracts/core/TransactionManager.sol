@@ -27,7 +27,7 @@ contract TransactionManager {
     }
 
     uint64 public transactionNonce = 0;
-    uint8 constant MAX_RETURN_SIZE = 10;
+    uint8 private constant MAX_RETURN_SIZE = 10;
     mapping(uint64 => Transaction) private transactionQueue;
     mapping(uint64 => Transaction) private transactionHistory;
 
