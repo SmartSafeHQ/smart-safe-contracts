@@ -7,9 +7,14 @@ pragma solidity ^0.8.19;
  */
 contract TransactionManager {
     error TransactionAlreadyProcessed();
-    
+
     event TransactionSignatureAdded(uint64 indexed);
     event TransactionProposalCreated(uint64 indexed);
+
+    enum TransactionStatus {
+        Active,
+        Processed
+    }
 
     struct Transaction {
         address from;
@@ -22,6 +27,7 @@ contract TransactionManager {
     }
 
     uint64 public transactionNonce = 0;
+    uint8 constant MAX_RETURN_SIZE = 10;
     mapping(uint64 => Transaction) private transactionQueue;
     mapping(uint64 => Transaction) private transactionHistory;
 
@@ -31,23 +37,32 @@ contract TransactionManager {
         return transactionQueue[_transactionNonce];
     }
 
-    function getTransactionHistory(
-        uint32 _page
+    function getTransactions(
+        uint32 _page,
+        TransactionStatus _transactionStatus
     ) external view returns (Transaction[] memory) {
-        uint8 maxLimit = 10;
-        uint64 startIndex = _page * maxLimit;
-        uint64 endIndex = startIndex + maxLimit;
+        uint64 startIndex = _page * MAX_RETURN_SIZE;
+        uint64 endIndex = startIndex + MAX_RETURN_SIZE;
         if (endIndex > transactionNonce) {
             endIndex = transactionNonce;
         }
         uint64 length = endIndex - startIndex;
         Transaction[] memory listOfTransactions = new Transaction[](length);
 
-        for (uint64 i = 0; i < length; i++) {
-            if (startIndex + i >= transactionNonce) {
-                break;
+        if (_transactionStatus == TransactionStatus.Active) {
+            for (uint64 i = 0; i < length; i++) {
+                if (startIndex + i >= transactionNonce) {
+                    break;
+                }
+                listOfTransactions[i] = transactionQueue[startIndex + i];
             }
-            listOfTransactions[i] = transactionHistory[startIndex + i];
+        } else {
+            for (uint64 i = 0; i < length; i++) {
+                if (startIndex + i >= transactionNonce) {
+                    break;
+                }
+                listOfTransactions[i] = transactionHistory[startIndex + i];
+            }
         }
 
         return listOfTransactions;
