@@ -12,7 +12,7 @@ contract TransactionManager {
     event TransactionProposalCreated(uint64 indexed);
 
     enum TransactionStatus {
-        Active,
+        Queued,
         Processed
     }
 
@@ -49,7 +49,7 @@ contract TransactionManager {
         uint64 length = endIndex - startIndex;
         Transaction[] memory listOfTransactions = new Transaction[](length);
 
-        if (_transactionStatus == TransactionStatus.Active) {
+        if (_transactionStatus == TransactionStatus.Queued) {
             for (uint64 i = 0; i < length; i++) {
                 if (startIndex + i >= transactionNonce) {
                     break;
