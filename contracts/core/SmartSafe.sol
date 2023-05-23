@@ -32,7 +32,7 @@ contract SmartSafe is
      * @dev
      * - This function essentially initializes a Smart Safe after user
      * deploys a proxy.
-     * - User can optionally send network native tokens (ETH, BNB, etc).
+     * @notice User can optionally send network native tokens (ETH, BNB, etc).
      */
     function setupOwners(
         address[] memory _owners,
