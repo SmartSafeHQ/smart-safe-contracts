@@ -142,6 +142,7 @@ contract SmartSafe is
             _to,
             _value,
             _data,
+            _transactionProposalSigner,
             _transactionProposalSignature
         );
 
@@ -156,9 +157,16 @@ contract SmartSafe is
         }
     }
 
+    function removeTransaction(uint64 _transactionNonce) internal {
+        OwnerManager.isSafeOwner(msg.sender);
+
+        TransactionManager.moveTransactionFromQueueToHistory(_transactionNonce);
+    }
+
     function addTransactionSignature(
         uint64 _transactionNonce,
         address _transactionProposalSigner,
+        bool _transactionApprovalType,
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
     ) external {
@@ -187,13 +195,18 @@ contract SmartSafe is
 
         TransactionManager.addTransactionSignature(
             _transactionNonce,
+            _transactionProposalSigner,
+            _transactionApprovalType,
             _transactionProposalSignature
         );
-    }
 
-    function removeTransaction(uint64 _transactionNonce) external {
-        OwnerManager.isSafeOwner(msg.sender);
-
-        TransactionManager.deleteTransaction(_transactionNonce);
+        // If number of total rejections is equal to half `threshold`
+        // then we automatically remove the transaction from the queue.
+        if (
+            TransactionManager.transactionRejectionsCount[_transactionNonce] >=
+            OwnerManager.threshold / 2
+        ) {
+            removeTransaction(_transactionNonce);
+        }
     }
 }

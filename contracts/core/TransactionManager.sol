@@ -31,6 +31,10 @@ contract TransactionManager {
     mapping(uint64 => Transaction) private transactionQueue;
     mapping(uint64 => Transaction) private transactionHistory;
 
+    mapping(uint64 => uint8) public transactionApprovalsCount;
+    mapping(uint64 => uint8) public transactionRejectionsCount;
+    mapping(uint64 => mapping(address => bool)) public transactionApprovals;
+
     function getFromTransactionQueue(
         uint64 _transactionNonce
     ) internal view returns (Transaction storage) {
@@ -74,16 +78,11 @@ contract TransactionManager {
         return transactionQueue[_transactionNonce].signatures;
     }
 
-    function deleteTransaction(uint64 _transactionNonce) internal {
-        delete transactionQueue[_transactionNonce];
-
-        transactionNonce++;
-    }
-
     function createTransactionProposal(
         address _to,
         uint256 _value,
         bytes calldata _data,
+        address _signer,
         bytes memory _transactionProposalSignature
     ) internal {
         bytes[] memory signatures = new bytes[](1);
@@ -100,7 +99,13 @@ contract TransactionManager {
         });
 
         uint64 currentTransactionNonce = transactionNonce;
+        // add transaction to queue
         transactionQueue[transactionNonce] = transactionProposal;
+        // mark transaction as approved by _signer
+        transactionApprovals[transactionNonce][_signer] = true;
+        // increase total transaction approvals for this transaction
+        transactionApprovalsCount[transactionNonce]++;
+
         transactionNonce++;
 
         emit TransactionProposalCreated(currentTransactionNonce);
@@ -108,11 +113,21 @@ contract TransactionManager {
 
     function addTransactionSignature(
         uint64 _transactionNonce,
+        address _signer,
+        bool _transactionApprovalType,
         bytes memory _transactionProposalSignature
     ) internal {
         transactionQueue[_transactionNonce].signatures.push(
             _transactionProposalSignature
         );
+
+        transactionApprovals[_transactionNonce][
+            _signer
+        ] = _transactionApprovalType;
+        // increase transaction approvals or rejections based on `_signer`'s choice
+        _transactionApprovalType == true
+            ? transactionApprovalsCount[_transactionNonce]++
+            : transactionRejectionsCount[_transactionNonce]++;
 
         emit TransactionSignatureAdded(_transactionNonce);
     }
