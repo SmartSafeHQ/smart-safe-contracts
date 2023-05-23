@@ -60,6 +60,7 @@ contract SmartSafe is
         address _to,
         uint256 _value,
         bytes memory _data,
+        uint64 _transactionNonce,
         // signature related
         address _transactionProposalSigner,
         bytes32 _hashedTransactionProposal,
@@ -67,11 +68,10 @@ contract SmartSafe is
     ) private view {
         OwnerManager.isSafeOwner(_transactionProposalSigner);
 
-        uint64 transactionNonce = TransactionManager.transactionNonce;
         SignatureManager.checkTransactionSignature(
             address(this),
             _to,
-            transactionNonce,
+            _transactionNonce,
             _value,
             _data,
             _transactionProposalSigner,
@@ -132,6 +132,7 @@ contract SmartSafe is
             _to,
             _value,
             _data,
+            TransactionManager.transactionNonce,
             _transactionProposalSigner,
             _hashedTransactionProposal,
             _transactionProposalSignature
@@ -178,6 +179,7 @@ contract SmartSafe is
             transaction.to,
             transaction.value,
             transaction.data,
+            transaction.transactionNonce,
             _transactionProposalSigner,
             _hashedTransactionProposal,
             _transactionProposalSignature
