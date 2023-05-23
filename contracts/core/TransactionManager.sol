@@ -6,6 +6,8 @@ pragma solidity ^0.8.19;
  * @author Ricardo Passos - @ricardo-passos
  */
 contract TransactionManager {
+    error TransactionAlreadyProcessed();
+    
     event TransactionSignatureAdded(uint64 indexed);
     event TransactionProposalCreated(uint64 indexed);
 
@@ -106,6 +108,13 @@ contract TransactionManager {
         Transaction memory executedTransaction = getFromTransactionQueue(
             _transactionNonce
         );
+
+        if (
+            executedTransaction.from == address(0) ||
+            executedTransaction.to == address(0)
+        ) {
+            revert TransactionAlreadyProcessed();
+        }
 
         transactionHistory[_transactionNonce] = executedTransaction;
 
