@@ -20,15 +20,16 @@ contract TransactionManager {
     }
 
     uint64 public transactionNonce = 0;
-    mapping(uint64 => Transaction) private transactions;
+    mapping(uint64 => Transaction) private transactionQueue;
+    mapping(uint64 => Transaction) private transactionHistory;
 
-    function getTransaction(
+    function getFromTransactionQueue(
         uint64 _transactionNonce
     ) internal view returns (Transaction storage) {
-        return transactions[_transactionNonce];
+        return transactionQueue[_transactionNonce];
     }
 
-    function getTransactions(
+    function getTransactionHistory(
         uint32 _page
     ) external view returns (Transaction[] memory) {
         uint8 maxLimit = 10;
@@ -44,20 +45,22 @@ contract TransactionManager {
             if (startIndex + i >= transactionNonce) {
                 break;
             }
-            listOfTransactions[i] = transactions[startIndex + i];
+            listOfTransactions[i] = transactionHistory[startIndex + i];
         }
 
         return listOfTransactions;
     }
 
-    function getTransactionSignatures(
+    function getFromTransactionQueueSignatures(
         uint64 _transactionNonce
     ) internal view returns (bytes[] memory) {
-        return transactions[_transactionNonce].signatures;
+        return transactionQueue[_transactionNonce].signatures;
     }
 
     function deleteTransaction(uint64 _transactionNonce) internal {
-        delete transactions[_transactionNonce];
+        delete transactionQueue[_transactionNonce];
+
+        transactionNonce++;
     }
 
     function createTransactionProposal(
@@ -80,7 +83,7 @@ contract TransactionManager {
         });
 
         uint64 currentTransactionNonce = transactionNonce;
-        transactions[transactionNonce] = transactionProposal;
+        transactionQueue[transactionNonce] = transactionProposal;
         transactionNonce++;
 
         emit TransactionProposalCreated(currentTransactionNonce);
@@ -90,10 +93,22 @@ contract TransactionManager {
         uint64 _transactionNonce,
         bytes memory _transactionProposalSignature
     ) internal {
-        transactions[_transactionNonce].signatures.push(
+        transactionQueue[_transactionNonce].signatures.push(
             _transactionProposalSignature
         );
 
         emit TransactionSignatureAdded(_transactionNonce);
+    }
+
+    function moveTransactionFromQueueToHistory(
+        uint64 _transactionNonce
+    ) internal {
+        Transaction memory executedTransaction = getFromTransactionQueue(
+            _transactionNonce
+        );
+
+        transactionHistory[_transactionNonce] = executedTransaction;
+
+        delete transactionQueue[_transactionNonce];
     }
 }

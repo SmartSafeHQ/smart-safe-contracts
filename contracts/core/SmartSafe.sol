@@ -84,9 +84,8 @@ contract SmartSafe is
         OwnerManager.isSafeOwner(msg.sender);
 
         TransactionManager.Transaction
-            storage proposedTransaction = TransactionManager.getTransaction(
-                _transactionNonce
-            );
+            storage proposedTransaction = TransactionManager
+                .getFromTransactionQueue(_transactionNonce);
 
         // By requiring that the `proposedTransactionNonce` is equal to
         // the latest proposed transaction `requiredTransactionNonce` we ensure
@@ -113,6 +112,8 @@ contract SmartSafe is
         if (!success && data.length > 0) {
             revert TransactionExecutionFailed(data);
         }
+
+        TransactionManager.moveTransactionFromQueueToHistory(_transactionNonce);
 
         emit TransactionExecutionSucceeded(_transactionNonce);
     }
@@ -162,7 +163,7 @@ contract SmartSafe is
     ) external {
         uint8 signaturesCount = uint8(
             TransactionManager
-                .getTransactionSignatures(_transactionNonce)
+                .getFromTransactionQueueSignatures(_transactionNonce)
                 .length
         );
 
@@ -171,7 +172,7 @@ contract SmartSafe is
         }
 
         TransactionManager.Transaction memory transaction = TransactionManager
-            .getTransaction(_transactionNonce);
+            .getFromTransactionQueue(_transactionNonce);
 
         checkTransaction(
             transaction.to,
@@ -186,5 +187,11 @@ contract SmartSafe is
             _transactionNonce,
             _transactionProposalSignature
         );
+    }
+
+    function removeTransaction(uint64 _transactionNonce) external {
+        OwnerManager.isSafeOwner(msg.sender);
+
+        TransactionManager.deleteTransaction(_transactionNonce);
     }
 }
