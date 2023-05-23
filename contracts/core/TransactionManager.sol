@@ -12,7 +12,6 @@ contract TransactionManager {
     struct Transaction {
         address from;
         address to;
-        bool isActive;
         uint64 transactionNonce;
         uint256 value;
         uint256 createdAt;
@@ -75,7 +74,6 @@ contract TransactionManager {
             to: _to,
             value: _value,
             transactionNonce: transactionNonce,
-            isActive: true,
             createdAt: block.timestamp,
             data: _data,
             signatures: signatures
