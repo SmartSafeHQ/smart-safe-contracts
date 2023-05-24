@@ -44,9 +44,9 @@ contract TransactionManager {
 
     /**
      * @dev Keep in mind that even if the `queue` or `history` mappings have no entries,
-     * Solidity will still return a list of `Transaction`s of `length` size but all values will be zeroed. 
-     * This is because the `listOfTransactions` array is sometimes created based on `transactionNonce`. 
-     * So, even if you have 2 transactions in `transactionHistory` and 0 transactions in `transactionHistory` 
+     * Solidity will still return a list of `Transaction`s of `length` size but all values will be zeroed.
+     * This is because the `listOfTransactions` array is sometimes created based on `transactionNonce`.
+     * So, even if you have 2 transactions in `transactionHistory` and 0 transactions in `transactionHistory`
      * and you run a query on the `transactionHistory` mapping, it will return an array of `length` 2 with all items
      * zeroed.
      */
@@ -139,6 +139,12 @@ contract TransactionManager {
             : transactionRejectionsCount[_transactionNonce]++;
 
         emit TransactionSignatureAdded(_transactionNonce);
+    }
+
+    function removeTransaction() public virtual {
+        moveTransactionFromQueueToHistory(requiredTransactionNonce);
+
+        requiredTransactionNonce++;
     }
 
     function moveTransactionFromQueueToHistory(

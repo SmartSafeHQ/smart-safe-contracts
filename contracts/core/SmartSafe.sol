@@ -155,16 +155,10 @@ contract SmartSafe is
         }
     }
 
-    function removeTransaction() external {
+    function removeTransaction() public override {
         OwnerManager.isSafeOwner(msg.sender);
 
-        uint64 currentTransactionNonce = TransactionManager
-            .requiredTransactionNonce;
-
-        TransactionManager.requiredTransactionNonce++;
-        TransactionManager.moveTransactionFromQueueToHistory(
-            currentTransactionNonce
-        );
+        TransactionManager.removeTransaction();
     }
 
     function addTransactionSignature(
