@@ -155,10 +155,16 @@ contract SmartSafe is
         }
     }
 
-    function removeTransaction(uint64 _transactionNonce) internal {
+    function removeTransaction() external {
         OwnerManager.isSafeOwner(msg.sender);
 
-        TransactionManager.moveTransactionFromQueueToHistory(_transactionNonce);
+        uint64 currentTransactionNonce = TransactionManager
+            .requiredTransactionNonce;
+
+        TransactionManager.requiredTransactionNonce++;
+        TransactionManager.moveTransactionFromQueueToHistory(
+            currentTransactionNonce
+        );
     }
 
     function addTransactionSignature(
@@ -207,7 +213,9 @@ contract SmartSafe is
             ] >= OwnerManager.threshold / 2
         ) {
             TransactionManager.requiredTransactionNonce++;
-            removeTransaction(requiredTransactionNonce);
+            TransactionManager.moveTransactionFromQueueToHistory(
+                requiredTransactionNonce
+            );
         }
     }
 }
