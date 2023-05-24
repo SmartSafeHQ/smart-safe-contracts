@@ -27,6 +27,7 @@ contract TransactionManager {
     }
 
     uint64 public transactionNonce = 0;
+    uint64 internal requiredTransactionNonce = 0;
     uint8 private constant MAX_RETURN_SIZE = 10;
     mapping(uint64 => Transaction) private transactionQueue;
     mapping(uint64 => Transaction) private transactionHistory;
@@ -41,6 +42,14 @@ contract TransactionManager {
         return transactionQueue[_transactionNonce];
     }
 
+    /**
+     * @dev Keep in mind that even if the `queue` or `history` mappings have no entries,
+     * Solidity will still return a list of `Transaction`s of `length` size but all values will be zeroed. 
+     * This is because the `listOfTransactions` array is sometimes created based on `transactionNonce`. 
+     * So, even if you have 2 transactions in `transactionHistory` and 0 transactions in `transactionHistory` 
+     * and you run a query on the `transactionHistory` mapping, it will return an array of `length` 2 with all items
+     * zeroed.
+     */
     function getTransactions(
         uint32 _page,
         TransactionStatus _transactionStatus
@@ -139,10 +148,7 @@ contract TransactionManager {
             _transactionNonce
         );
 
-        if (
-            executedTransaction.from == address(0) ||
-            executedTransaction.to == address(0)
-        ) {
+        if (executedTransaction.createdAt == 0) {
             revert TransactionAlreadyProcessed();
         }
 

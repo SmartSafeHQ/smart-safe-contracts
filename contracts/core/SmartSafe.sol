@@ -34,10 +34,11 @@ contract SmartSafe is
      * deploys a proxy.
      * @notice User can optionally send network native tokens (ETH, BNB, etc).
      */
-    function setupOwners(
-        address[] memory _owners,
-        uint8 _threshold
-    ) external payable initializer {
+    function setupOwners(address[] memory _owners, uint8 _threshold)
+        external
+        payable
+        initializer
+    {
         if (
             _owners.length == 0 ||
             _threshold == 0 ||
@@ -87,11 +88,8 @@ contract SmartSafe is
             memory proposedTransaction = TransactionManager
                 .getFromTransactionQueue(_transactionNonce);
 
-        // By requiring that the `proposedTransactionNonce` is equal to
-        // the latest proposed transaction `requiredTransactionNonce` we ensure
-        // all transactions follow a linear order of execution.
-        uint64 requiredTransactionNonce = (TransactionManager.transactionNonce -
-            1);
+        uint64 requiredTransactionNonce = TransactionManager
+            .requiredTransactionNonce;
         uint64 proposedTransactionNonce = proposedTransaction.transactionNonce;
         if (proposedTransactionNonce != requiredTransactionNonce) {
             revert TransactionNonceError(
@@ -206,6 +204,7 @@ contract SmartSafe is
             TransactionManager.transactionRejectionsCount[_transactionNonce] >=
             OwnerManager.threshold / 2
         ) {
+            TransactionManager.requiredTransactionNonce++;
             removeTransaction(_transactionNonce);
         }
     }
