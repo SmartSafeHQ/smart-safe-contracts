@@ -34,11 +34,10 @@ contract SmartSafe is
      * deploys a proxy.
      * @notice User can optionally send network native tokens (ETH, BNB, etc).
      */
-    function setupOwners(address[] memory _owners, uint8 _threshold)
-        external
-        payable
-        initializer
-    {
+    function setupOwners(
+        address[] memory _owners,
+        uint8 _threshold
+    ) external payable initializer {
         if (
             _owners.length == 0 ||
             _threshold == 0 ||
@@ -111,6 +110,7 @@ contract SmartSafe is
             revert TransactionExecutionFailed(data);
         }
 
+        TransactionManager.requiredTransactionNonce++;
         TransactionManager.moveTransactionFromQueueToHistory(_transactionNonce);
 
         emit TransactionExecutionSucceeded(_transactionNonce);
@@ -162,15 +162,16 @@ contract SmartSafe is
     }
 
     function addTransactionSignature(
-        uint64 _transactionNonce,
         address _transactionProposalSigner,
         bool _transactionApprovalType,
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
     ) external {
+        uint64 requiredTransactionNonce = TransactionManager
+            .requiredTransactionNonce;
         uint8 signaturesCount = uint8(
             TransactionManager
-                .getFromTransactionQueueSignatures(_transactionNonce)
+                .getFromTransactionQueueSignatures(requiredTransactionNonce)
                 .length
         );
 
@@ -179,7 +180,7 @@ contract SmartSafe is
         }
 
         TransactionManager.Transaction memory transaction = TransactionManager
-            .getFromTransactionQueue(_transactionNonce);
+            .getFromTransactionQueue(requiredTransactionNonce);
 
         checkTransaction(
             transaction.to,
@@ -192,7 +193,7 @@ contract SmartSafe is
         );
 
         TransactionManager.addTransactionSignature(
-            _transactionNonce,
+            requiredTransactionNonce,
             _transactionProposalSigner,
             _transactionApprovalType,
             _transactionProposalSignature
@@ -201,11 +202,12 @@ contract SmartSafe is
         // If number of total rejections is equal to half `threshold`
         // then we automatically remove the transaction from the queue.
         if (
-            TransactionManager.transactionRejectionsCount[_transactionNonce] >=
-            OwnerManager.threshold / 2
+            TransactionManager.transactionRejectionsCount[
+                requiredTransactionNonce
+            ] >= OwnerManager.threshold / 2
         ) {
             TransactionManager.requiredTransactionNonce++;
-            removeTransaction(_transactionNonce);
+            removeTransaction(requiredTransactionNonce);
         }
     }
 }
