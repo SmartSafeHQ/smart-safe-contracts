@@ -26,7 +26,7 @@ contract TransactionManager {
         bytes[] signatures;
     }
 
-    uint64 internal transactionNonce = 0;
+    uint64 public transactionNonce = 0;
     uint64 public requiredTransactionNonce = 0;
     uint8 private constant MAX_RETURN_SIZE = 10;
     mapping(uint64 => Transaction) private transactionQueue;
