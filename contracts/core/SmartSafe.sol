@@ -111,6 +111,7 @@ contract SmartSafe is
         }
 
         TransactionManager.requiredTransactionNonce++;
+        TransactionManager.executedSize++;
         TransactionManager.moveTransactionFromQueueToHistory(_transactionNonce);
 
         emit TransactionExecutionSucceeded(_transactionNonce);
@@ -207,6 +208,7 @@ contract SmartSafe is
             ] >= OwnerManager.threshold / 2
         ) {
             TransactionManager.requiredTransactionNonce++;
+            TransactionManager.updateExecutedTransactions();
             TransactionManager.moveTransactionFromQueueToHistory(
                 requiredTransactionNonce
             );

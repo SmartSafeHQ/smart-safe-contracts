@@ -26,59 +26,69 @@ contract TransactionManager {
         bytes[] signatures;
     }
 
+    uint64 internal executedSize = 0;
     uint64 public transactionNonce = 0;
     uint64 public requiredTransactionNonce = 0;
-    uint8 private constant MAX_RETURN_SIZE = 10;
-    mapping(uint64 => Transaction) private transactionQueue;
-    mapping(uint64 => Transaction) private transactionHistory;
+
+    uint8 internal constant MAX_RETURN_SIZE = 10;
+
+    mapping(uint64 => Transaction) internal transactionExecuted;
+    mapping(uint64 => Transaction) internal transactionQueue;
 
     mapping(uint64 => uint8) internal transactionApprovalsCount;
     mapping(uint64 => uint8) internal transactionRejectionsCount;
     mapping(uint64 => mapping(address => bool)) public transactionApprovals;
 
-    function getFromTransactionQueue(
-        uint64 _transactionNonce
-    ) internal view returns (Transaction storage) {
-        return transactionQueue[_transactionNonce];
+    function getQueueTransactions(
+        uint32 _page
+    ) external view returns (Transaction[] memory) {
+        // `requiredTransactionNonce` serves a pointer to at which index
+        // start fethcing ``
+        uint64 startIndex = (_page * MAX_RETURN_SIZE) +
+            requiredTransactionNonce;
+        uint64 endIndex = startIndex + MAX_RETURN_SIZE;
+        if (endIndex > (transactionNonce - requiredTransactionNonce)) {
+            endIndex = (transactionNonce - requiredTransactionNonce);
+        }
+
+        Transaction[] memory listOfTransactions = new Transaction[](endIndex);
+
+        for (uint64 i = 0; i < endIndex; i++) {
+            if (startIndex + i >= transactionNonce) {
+                break;
+            }
+
+            listOfTransactions[i] = transactionQueue[startIndex + i];
+        }
+
+        return listOfTransactions;
     }
 
-    /**
-     * @dev Keep in mind that even if the `queue` or `history` mappings have no entries,
-     * Solidity will still return a list of `Transaction`s of `length` size but all values will be zeroed.
-     * This is because the `listOfTransactions` array is sometimes created based on `transactionNonce`.
-     * So, even if you have 2 transactions in `transactionHistory` and 0 transactions in `transactionHistory`
-     * and you run a query on the `transactionHistory` mapping, it will return an array of `length` 2 with all items
-     * zeroed.
-     */
-    function getTransactions(
-        uint32 _page,
-        TransactionStatus _transactionStatus
+    function getExecutedTransactions(
+        uint32 _page
     ) external view returns (Transaction[] memory) {
         uint64 startIndex = _page * MAX_RETURN_SIZE;
         uint64 endIndex = startIndex + MAX_RETURN_SIZE;
-        if (endIndex > transactionNonce) {
-            endIndex = transactionNonce;
+        if (endIndex > executedSize) {
+            endIndex = executedSize;
         }
         uint64 length = endIndex - startIndex;
         Transaction[] memory listOfTransactions = new Transaction[](length);
 
-        if (_transactionStatus == TransactionStatus.Queued) {
-            for (uint64 i = 0; i < length; i++) {
-                if (startIndex + i >= transactionNonce) {
-                    break;
-                }
-                listOfTransactions[i] = transactionQueue[startIndex + i];
+        for (uint64 i = 0; i < length; i++) {
+            if (startIndex + i >= executedSize) {
+                break;
             }
-        } else {
-            for (uint64 i = 0; i < length; i++) {
-                if (startIndex + i >= transactionNonce) {
-                    break;
-                }
-                listOfTransactions[i] = transactionHistory[startIndex + i];
-            }
+            listOfTransactions[i] = transactionExecuted[startIndex + i];
         }
 
         return listOfTransactions;
+    }
+
+    function getFromTransactionQueue(
+        uint64 _transactionNonce
+    ) internal view returns (Transaction storage) {
+        return transactionQueue[_transactionNonce];
     }
 
     function getFromTransactionQueueSignatures(
@@ -141,10 +151,15 @@ contract TransactionManager {
         emit TransactionSignatureAdded(_transactionNonce);
     }
 
+    function updateExecutedTransactions() internal {
+        executedSize++;
+    }
+
     function removeTransaction() public virtual {
         moveTransactionFromQueueToHistory(requiredTransactionNonce);
 
         requiredTransactionNonce++;
+        updateExecutedTransactions();
     }
 
     function moveTransactionFromQueueToHistory(
@@ -158,7 +173,7 @@ contract TransactionManager {
             revert TransactionAlreadyProcessed();
         }
 
-        transactionHistory[_transactionNonce] = executedTransaction;
+        transactionExecuted[_transactionNonce] = executedTransaction;
 
         delete transactionQueue[_transactionNonce];
     }
