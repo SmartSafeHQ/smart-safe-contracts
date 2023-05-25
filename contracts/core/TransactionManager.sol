@@ -32,8 +32,8 @@ contract TransactionManager {
     mapping(uint64 => Transaction) private transactionQueue;
     mapping(uint64 => Transaction) private transactionHistory;
 
-    mapping(uint64 => uint8) public transactionApprovalsCount;
-    mapping(uint64 => uint8) public transactionRejectionsCount;
+    mapping(uint64 => uint8) internal transactionApprovalsCount;
+    mapping(uint64 => uint8) internal transactionRejectionsCount;
     mapping(uint64 => mapping(address => bool)) public transactionApprovals;
 
     function getFromTransactionQueue(
