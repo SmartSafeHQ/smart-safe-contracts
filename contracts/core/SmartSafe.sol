@@ -200,13 +200,12 @@ contract SmartSafe is
             _transactionProposalSignature
         );
 
-        // If number of total rejections is equal to half `threshold`
+        // If number of total rejections is equal or greater than `threshold`
         // then we automatically remove the transaction from the queue.
-        if (
-            TransactionManager.transactionRejectionsCount[
-                requiredTransactionNonce
-            ] >= OwnerManager.threshold / 2
-        ) {
+        uint8 rejectionsCount = TransactionManager.transactionRejectionsCount[
+            requiredTransactionNonce
+        ];
+        if (rejectionsCount >= OwnerManager.threshold) {
             TransactionManager.requiredTransactionNonce++;
             TransactionManager.updateExecutedTransactions();
             TransactionManager.moveTransactionFromQueueToHistory(
