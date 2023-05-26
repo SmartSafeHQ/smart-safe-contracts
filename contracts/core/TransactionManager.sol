@@ -8,6 +8,7 @@ pragma solidity ^0.8.19;
 contract TransactionManager {
     error OwnerAlreadySigned();
     error TransactionAlreadyProcessed();
+    error InvalidTransactionApprovalType();
 
     event TransactionSignatureAdded(uint64 indexed);
     event TransactionProposalCreated(uint64 indexed);
@@ -115,7 +116,7 @@ contract TransactionManager {
         return transactionQueue[_transactionNonce].signatures;
     }
 
-    function createTransactionProposal(
+    function _createTransactionProposal(
         address _to,
         uint256 _value,
         bytes calldata _data,
@@ -155,6 +156,10 @@ contract TransactionManager {
         TransactionApproval _transactionApprovalType,
         bytes memory _transactionProposalSignature
     ) internal {
+        if (_transactionApprovalType == TransactionApproval.Awaiting) {
+            revert InvalidTransactionApprovalType();
+        }
+
         TransactionApproval hasOwnerAlreadySignedTransaction = transactionApprovals[
                 _transactionNonce
             ][_signer];

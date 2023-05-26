@@ -63,7 +63,6 @@ contract SmartSafe is
         uint64 _transactionNonce,
         // signature related
         address _transactionProposalSigner,
-        bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
     ) private view {
         OwnerManager.isSafeOwner(_transactionProposalSigner);
@@ -75,7 +74,6 @@ contract SmartSafe is
             _value,
             _data,
             _transactionProposalSigner,
-            _hashedTransactionProposal,
             _transactionProposalSignature
         );
     }
@@ -124,7 +122,6 @@ contract SmartSafe is
         bytes calldata _data,
         // signature related
         address _transactionProposalSigner,
-        bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
     ) external payable {
         checkTransaction(
@@ -133,11 +130,10 @@ contract SmartSafe is
             _data,
             TransactionManager.transactionNonce,
             _transactionProposalSigner,
-            _hashedTransactionProposal,
             _transactionProposalSignature
         );
 
-        TransactionManager.createTransactionProposal(
+        TransactionManager._createTransactionProposal(
             _to,
             _value,
             _data,
@@ -165,7 +161,6 @@ contract SmartSafe is
     function addTransactionSignature(
         address _transactionProposalSigner,
         TransactionManager.TransactionApproval _transactionApprovalType,
-        bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
     ) external {
         uint64 requiredTransactionNonce = TransactionManager
@@ -189,7 +184,6 @@ contract SmartSafe is
             transaction.data,
             transaction.transactionNonce,
             _transactionProposalSigner,
-            _hashedTransactionProposal,
             _transactionProposalSignature
         );
 

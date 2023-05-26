@@ -34,7 +34,6 @@ contract SignatureManager is EIP712 {
         bytes memory _data,
         // signature related
         address _signer,
-        bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
     ) internal view returns (address) {
         bytes32 transactionHash = computeTransactionHash(
@@ -45,12 +44,8 @@ contract SignatureManager is EIP712 {
             _data
         );
 
-        if (transactionHash != _hashedTransactionProposal) {
-            revert InvalidTransactionHash();
-        }
-
         address transactionSigner = ECDSA.recover(
-            ECDSA.toEthSignedMessageHash(_hashedTransactionProposal),
+            ECDSA.toEthSignedMessageHash(transactionHash),
             _transactionProposalSignature
         );
 
