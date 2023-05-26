@@ -21,7 +21,8 @@ contract SmartSafe is
     SignatureManager,
     FallbackManager
 {
-    error UnsufficientSignatures();
+    error InsufficientBalance();
+    error InsufficientSignatures();
     error SignaturesAlreadyCollected();
     error TransactionExecutionFailed(bytes);
     error TransactionNonceError(uint64 required, uint64 received);
@@ -95,9 +96,13 @@ contract SmartSafe is
             );
         }
 
+        if (address(this).balance < proposedTransaction.value) {
+            revert InsufficientBalance();
+        }
+
         uint8 signaturesCount = uint8(proposedTransaction.signatures.length);
         if (signaturesCount < OwnerManager.threshold) {
-            revert UnsufficientSignatures();
+            revert InsufficientSignatures();
         }
 
         (bool success, bytes memory data) = proposedTransaction.to.call{
