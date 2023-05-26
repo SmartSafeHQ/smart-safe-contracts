@@ -6,10 +6,17 @@ pragma solidity ^0.8.19;
  * @author Ricardo Passos - @ricardo-passos
  */
 contract TransactionManager {
+    error OwnerAlreadySigned();
     error TransactionAlreadyProcessed();
 
     event TransactionSignatureAdded(uint64 indexed);
     event TransactionProposalCreated(uint64 indexed);
+
+    enum TransactionApproval {
+        Awaiting,
+        Approved,
+        Rejected
+    }
 
     enum TransactionStatus {
         Queued,
@@ -37,13 +44,14 @@ contract TransactionManager {
 
     mapping(uint64 => uint8) internal transactionApprovalsCount;
     mapping(uint64 => uint8) internal transactionRejectionsCount;
-    mapping(uint64 => mapping(address => bool)) public transactionApprovals;
+    mapping(uint64 => mapping(address => TransactionApproval))
+        private transactionApprovals;
 
     function getQueueTransactions(
         uint32 _page
     ) internal view returns (Transaction[] memory) {
         // `requiredTransactionNonce` serves a pointer to at which index
-        // start fethcing ``
+        // start fetching `Transaction`s.
         uint64 startIndex = (_page * MAX_RETURN_SIZE) +
             requiredTransactionNonce;
         uint64 endIndex = startIndex + MAX_RETURN_SIZE;
@@ -131,7 +139,8 @@ contract TransactionManager {
         // add transaction to queue
         transactionQueue[transactionNonce] = transactionProposal;
         // mark transaction as approved by _signer
-        transactionApprovals[transactionNonce][_signer] = true;
+        transactionApprovals[transactionNonce][_signer] = TransactionApproval
+            .Approved;
         // increase total transaction approvals for this transaction
         transactionApprovalsCount[transactionNonce]++;
 
@@ -143,9 +152,17 @@ contract TransactionManager {
     function addTransactionSignature(
         uint64 _transactionNonce,
         address _signer,
-        bool _transactionApprovalType,
+        TransactionApproval _transactionApprovalType,
         bytes memory _transactionProposalSignature
     ) internal {
+        TransactionApproval hasOwnerAlreadySignedTransaction = transactionApprovals[
+                _transactionNonce
+            ][_signer];
+
+        if (hasOwnerAlreadySignedTransaction != TransactionApproval.Awaiting) {
+            revert OwnerAlreadySigned();
+        }
+
         transactionQueue[_transactionNonce].signatures.push(
             _transactionProposalSignature
         );
@@ -154,9 +171,17 @@ contract TransactionManager {
             _signer
         ] = _transactionApprovalType;
         // increase transaction approvals or rejections based on `_signer`'s choice
-        _transactionApprovalType == true
-            ? transactionApprovalsCount[_transactionNonce]++
-            : transactionRejectionsCount[_transactionNonce]++;
+        if (_transactionApprovalType == TransactionApproval.Approved) {
+            transactionApprovalsCount[_transactionNonce]++;
+            transactionApprovals[_transactionNonce][
+                _signer
+            ] = TransactionApproval.Approved;
+        } else {
+            transactionRejectionsCount[_transactionNonce]++;
+            transactionApprovals[_transactionNonce][
+                _signer
+            ] = TransactionApproval.Rejected;
+        }
 
         emit TransactionSignatureAdded(_transactionNonce);
     }

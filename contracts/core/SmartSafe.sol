@@ -164,7 +164,7 @@ contract SmartSafe is
 
     function addTransactionSignature(
         address _transactionProposalSigner,
-        bool _transactionApprovalType,
+        TransactionManager.TransactionApproval _transactionApprovalType,
         bytes32 _hashedTransactionProposal,
         bytes memory _transactionProposalSignature
     ) external {
@@ -205,9 +205,7 @@ contract SmartSafe is
         uint8 rejectionsCount = TransactionManager.transactionRejectionsCount[
             requiredTransactionNonce
         ];
-        if (
-            rejectionsCount >= OwnerManager.totalOwners / 2
-        ) {
+        if (rejectionsCount >= OwnerManager.totalOwners / 2) {
             TransactionManager.requiredTransactionNonce++;
             TransactionManager.increaseExecutedTransactionsSize();
             TransactionManager.moveTransactionFromQueueToHistory(
