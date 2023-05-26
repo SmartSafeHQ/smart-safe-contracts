@@ -13,7 +13,7 @@ contract TransactionManager {
 
     enum TransactionStatus {
         Queued,
-        Processed
+        Executed
     }
 
     struct Transaction {
@@ -26,9 +26,9 @@ contract TransactionManager {
         bytes[] signatures;
     }
 
-    uint64 internal executedSize = 0;
     uint64 public transactionNonce = 0;
     uint64 public requiredTransactionNonce = 0;
+    uint64 internal executedTransactionsSize = 0;
 
     uint8 internal constant MAX_RETURN_SIZE = 10;
 
@@ -41,7 +41,7 @@ contract TransactionManager {
 
     function getQueueTransactions(
         uint32 _page
-    ) external view returns (Transaction[] memory) {
+    ) internal view returns (Transaction[] memory) {
         // `requiredTransactionNonce` serves a pointer to at which index
         // start fethcing ``
         uint64 startIndex = (_page * MAX_RETURN_SIZE) +
@@ -66,23 +66,33 @@ contract TransactionManager {
 
     function getExecutedTransactions(
         uint32 _page
-    ) external view returns (Transaction[] memory) {
+    ) internal view returns (Transaction[] memory) {
         uint64 startIndex = _page * MAX_RETURN_SIZE;
         uint64 endIndex = startIndex + MAX_RETURN_SIZE;
-        if (endIndex > executedSize) {
-            endIndex = executedSize;
+        if (endIndex > executedTransactionsSize) {
+            endIndex = executedTransactionsSize;
         }
         uint64 length = endIndex - startIndex;
         Transaction[] memory listOfTransactions = new Transaction[](length);
 
         for (uint64 i = 0; i < length; i++) {
-            if (startIndex + i >= executedSize) {
+            if (startIndex + i >= executedTransactionsSize) {
                 break;
             }
             listOfTransactions[i] = transactionExecuted[startIndex + i];
         }
 
         return listOfTransactions;
+    }
+
+    function getTransactions(
+        uint8 _page,
+        TransactionStatus _transactionStatus
+    ) external view returns (Transaction[] memory) {
+        return
+            _transactionStatus == TransactionStatus.Queued
+                ? getQueueTransactions(_page)
+                : getExecutedTransactions(_page);
     }
 
     function getFromTransactionQueue(
@@ -151,15 +161,15 @@ contract TransactionManager {
         emit TransactionSignatureAdded(_transactionNonce);
     }
 
-    function updateExecutedTransactions() internal {
-        executedSize++;
+    function increaseExecutedTransactionsSize() internal {
+        executedTransactionsSize++;
     }
 
     function removeTransaction() public virtual {
         moveTransactionFromQueueToHistory(requiredTransactionNonce);
 
         requiredTransactionNonce++;
-        updateExecutedTransactions();
+        increaseExecutedTransactionsSize();
     }
 
     function moveTransactionFromQueueToHistory(

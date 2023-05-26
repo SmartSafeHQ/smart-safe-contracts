@@ -111,7 +111,7 @@ contract SmartSafe is
         }
 
         TransactionManager.requiredTransactionNonce++;
-        TransactionManager.executedSize++;
+        TransactionManager.increaseExecutedTransactionsSize();
         TransactionManager.moveTransactionFromQueueToHistory(_transactionNonce);
 
         emit TransactionExecutionSucceeded(_transactionNonce);
@@ -200,17 +200,27 @@ contract SmartSafe is
             _transactionProposalSignature
         );
 
-        // If number of total rejections is equal or greater than `threshold`
-        // then we automatically remove the transaction from the queue.
+        // Automatically remove transaction from queue if rejections is equal
+        // or greather than `threshold`
         uint8 rejectionsCount = TransactionManager.transactionRejectionsCount[
             requiredTransactionNonce
         ];
-        if (rejectionsCount >= OwnerManager.threshold) {
+        if (
+            rejectionsCount >= OwnerManager.totalOwners / 2
+        ) {
             TransactionManager.requiredTransactionNonce++;
-            TransactionManager.updateExecutedTransactions();
+            TransactionManager.increaseExecutedTransactionsSize();
             TransactionManager.moveTransactionFromQueueToHistory(
                 requiredTransactionNonce
             );
+        }
+
+        // Automatically execute transaction if approvals are equal to `threshold`
+        uint8 approvalsCount = TransactionManager.transactionApprovalsCount[
+            requiredTransactionNonce
+        ];
+        if (approvalsCount == OwnerManager.threshold) {
+            executeTransaction(requiredTransactionNonce);
         }
     }
 }
