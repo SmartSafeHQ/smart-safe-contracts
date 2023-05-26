@@ -43,7 +43,7 @@ function calculateSalt() {
 function parseContractErrorEvent() {
   const iface = new ethers.utils.Interface(SMART_SAFE_ABI);
 
-  return iface.parseError("0x638b87a1");
+  return iface.parseError("0xe6c4247b");
 }
 
 function getHashOfSignatureStruct(
@@ -68,6 +68,7 @@ function getHashOfSignatureStruct(
 }
 
 async function signTypedMessage(
+  chainId: number,
   verifyingContract: string,
   signer: SignerWithAddress,
   nonce: number
@@ -75,8 +76,28 @@ async function signTypedMessage(
   const domain = {
     name: hashString("Smart Safe Signature Manager"),
     version: hashString("1.0.0"),
-    chainId: 80001,
+    chainId,
     verifyingContract,
+  };
+
+  const types = {
+    Signature: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "transactionNonce", type: "uint64" },
+      { name: "value", type: "uint256" },
+      { name: "data", type: "bytes32" },
+    ],
+  };
+
+  const values = {
+    from: verifyingContract,
+    to: "0xd9145CCE52D386f254917e481eB44e9943F39138",
+    transactionNonce: nonce,
+    value: "0",
+    data: ethers.utils.keccak256(
+      "0x00b9573b0000000000000000000000004b20993bc481177ec7e8f571cecae8a9e22c02db0000000000000000000000000000000000000000000000000000000000000002"
+    ),
   };
 
   const typeHash = hashString(
@@ -97,11 +118,13 @@ async function signTypedMessage(
   );
 
   const { hashedEncodedStruct } = getHashOfSignatureStruct(
-    "0xb238ccC49e94dE201d2D5Cfc7050dD1F70eC5EA7", // always the Smart Safe address
-    "0x8E6f42979b5517206Cf9e69A969Fac961D1b36B7",
+    verifyingContract, // always the Smart Safe address
+    "0xd9145CCE52D386f254917e481eB44e9943F39138",
     nonce,
-    ethers.utils.parseEther("1").toString(),
-    ethers.utils.keccak256("0x")
+    "0", //ethers.utils.parseEther("1").toString(),
+    ethers.utils.keccak256(
+      "0x00b9573b0000000000000000000000004b20993bc481177ec7e8f571cecae8a9e22c02db0000000000000000000000000000000000000000000000000000000000000002"
+    )
   );
 
   const typedDataHash = ethers.utils.keccak256(
@@ -121,6 +144,7 @@ async function signTypedMessage(
 async function main() {
   const signer = (await ethers.getSigners())[0];
   const signer2 = (await ethers.getSigners())[1];
+  const signer3 = (await ethers.getSigners())[2];
 
   console.log("Signer address:", signer.address, "\n");
   console.log("SALT", calculateSalt());
@@ -130,9 +154,10 @@ async function main() {
   const nonce = await getTransactioNonce(contract);
 
   const { signedTypedDataHash, typedDataHash } = await signTypedMessage(
-    "0xb238ccC49e94dE201d2D5Cfc7050dD1F70eC5EA7",
-    signer,
-    nonce
+    1,
+    "0xd9145CCE52D386f254917e481eB44e9943F39138",
+    signer2,
+    2
   );
 
   console.log({ signedTypedDataHash, typedDataHash });
