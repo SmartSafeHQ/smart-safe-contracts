@@ -92,7 +92,7 @@ async function signTypedMessage(
 
   const values = {
     from: verifyingContract,
-    to: "0xd9145CCE52D386f254917e481eB44e9943F39138",
+    to: "0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47",
     transactionNonce: nonce,
     value: "0",
     data: ethers.utils.keccak256(
@@ -119,7 +119,7 @@ async function signTypedMessage(
 
   const { hashedEncodedStruct } = getHashOfSignatureStruct(
     verifyingContract, // always the Smart Safe address
-    "0xd9145CCE52D386f254917e481eB44e9943F39138",
+    "0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47",
     nonce,
     "0", //ethers.utils.parseEther("1").toString(),
     ethers.utils.keccak256(
@@ -155,9 +155,9 @@ async function main() {
 
   const { signedTypedDataHash, typedDataHash } = await signTypedMessage(
     1,
-    "0xd9145CCE52D386f254917e481eB44e9943F39138",
+    "0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47",
     signer2,
-    2
+    0
   );
 
   console.log({ signedTypedDataHash, typedDataHash });

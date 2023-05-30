@@ -7,6 +7,7 @@ pragma solidity ^0.8.19;
  */
 contract TransactionManager {
     error OwnerAlreadySigned();
+    error OwnersLengthOutOfBounds();
     error TransactionAlreadyProcessed();
     error InvalidTransactionApprovalType();
 
@@ -22,6 +23,11 @@ contract TransactionManager {
     enum TransactionStatus {
         Queued,
         Executed
+    }
+
+    struct TransactionApprovals {
+        address ownerAddress;
+        TransactionApproval approvalStatus;
     }
 
     struct Transaction {
@@ -47,6 +53,25 @@ contract TransactionManager {
     mapping(uint64 => uint8) internal transactionRejectionsCount;
     mapping(uint64 => mapping(address => TransactionApproval))
         private transactionApprovals;
+
+    function getTransactionApprovals(
+        uint64 _transactionNonce,
+        address[] calldata _owners
+    ) external view returns (uint8[] memory) {
+        if (_owners.length > 255) {
+            revert OwnersLengthOutOfBounds();
+        }
+
+        uint8[] memory approvals = new uint8[](_owners.length);
+        for (uint8 i = 0; i < _owners.length; i++) {
+            address owner = _owners[i];
+            approvals[i] = uint8(
+                transactionApprovals[_transactionNonce][owner]
+            );
+        }
+
+        return approvals;
+    }
 
     function getQueueTransactions(
         uint32 _page
