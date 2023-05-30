@@ -133,7 +133,7 @@ contract SmartSafe is
             _to,
             _value,
             _data,
-            TransactionManager.requiredTransactionNonce,
+            TransactionManager.transactionNonce,
             _transactionProposalSigner,
             _transactionProposalSignature
         );
