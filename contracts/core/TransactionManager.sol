@@ -56,21 +56,37 @@ contract TransactionManager {
 
     function getTransactionApprovals(
         uint64 _transactionNonce,
-        address[] calldata _owners
-    ) external view returns (uint8[] memory) {
-        if (_owners.length > 255) {
-            revert OwnersLengthOutOfBounds();
-        }
+        address[] memory _owners
+    ) internal view returns (TransactionApprovals[] memory) {
+        TransactionApprovals[] memory approvals = new TransactionApprovals[](
+            _owners.length
+        );
 
-        uint8[] memory approvals = new uint8[](_owners.length);
+        uint256 nonZeroCount = 0; // Counter for non-zero approvals
+
         for (uint8 i = 0; i < _owners.length; i++) {
             address owner = _owners[i];
-            approvals[i] = uint8(
-                transactionApprovals[_transactionNonce][owner]
-            );
+            TransactionApproval vote = transactionApprovals[_transactionNonce][
+                owner
+            ];
+
+            if (vote != TransactionApproval.Awaiting) {
+                approvals[nonZeroCount] = TransactionApprovals({
+                    ownerAddress: owner,
+                    approvalStatus: vote
+                });
+                nonZeroCount++;
+            }
         }
 
-        return approvals;
+        // Create a new array with non-zero approvals only
+        TransactionApprovals[]
+            memory nonZeroApprovals = new TransactionApprovals[](nonZeroCount);
+        for (uint256 i = 0; i < nonZeroCount; i++) {
+            nonZeroApprovals[i] = approvals[i];
+        }
+
+        return nonZeroApprovals;
     }
 
     function getQueueTransactions(

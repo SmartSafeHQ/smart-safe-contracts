@@ -163,6 +163,16 @@ contract SmartSafe is
         TransactionManager.removeTransaction();
     }
 
+    function getTransactionApprovals(
+        uint64 _transactionNonce
+    ) external view returns (TransactionManager.TransactionApprovals[] memory) {
+        return
+            TransactionManager.getTransactionApprovals(
+                _transactionNonce,
+                OwnerManager.getOwners()
+            );
+    }
+
     function addTransactionSignature(
         address _transactionProposalSigner,
         TransactionManager.TransactionApproval _transactionApprovalType,

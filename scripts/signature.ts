@@ -92,7 +92,7 @@ async function signTypedMessage(
 
   const values = {
     from: verifyingContract,
-    to: "0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47",
+    to: "0xd9145CCE52D386f254917e481eB44e9943F39138",
     transactionNonce: nonce,
     value: "0",
     data: ethers.utils.keccak256(
