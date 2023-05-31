@@ -1,13 +1,10 @@
-# Sample Hardhat Project
+# Smart Safe
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+Smart Safe is a multi-signature vault. The entry point is `SmartSafeProxyFactory.sol`. It uses the EIP-1167 so that users only pay for deploying a Proxy contract that interacts with the Smart Safe implementation.
 
-Try running some of the following tasks:
+## Getting started
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
-```
+Your first deploy the `src/core/SmartSafe.sol` contract.
+Second, you deploy the `src/proxy/SmartSafeProxyFactory.sol` and call `deploySmartSafeProxy`. This function will initialize a SmartSafe for the given `_owners` parameter.
+
+From now on, the user will interact with the smart contract deployed by the `deploySmartSafeProxy` function.
