@@ -84,7 +84,7 @@ contract SmartSafe is
 
         TransactionManager.Transaction
             memory proposedTransaction = TransactionManager
-                .getFromTransactionQueue(_transactionNonce);
+                .getTransactionFromQueue(_transactionNonce);
 
         uint64 requiredTransactionNonce = TransactionManager
             .requiredTransactionNonce;
@@ -114,8 +114,10 @@ contract SmartSafe is
         }
 
         TransactionManager.requiredTransactionNonce++;
-        TransactionManager.increaseExecutedTransactionsSize();
-        TransactionManager.moveTransactionFromQueueToHistory(_transactionNonce);
+        TransactionManager.executedTransactionsSize++;
+        TransactionManager.moveTransactionFromQueueToExecuted(
+            _transactionNonce
+        );
 
         emit TransactionExecutionSucceeded(_transactionNonce);
     }
@@ -182,7 +184,7 @@ contract SmartSafe is
             .requiredTransactionNonce;
         uint8 signaturesCount = uint8(
             TransactionManager
-                .getFromTransactionQueueSignatures(requiredTransactionNonce)
+                .getSignaturesFromTransactionQueue(requiredTransactionNonce)
                 .length
         );
 
@@ -191,7 +193,7 @@ contract SmartSafe is
         }
 
         TransactionManager.Transaction memory transaction = TransactionManager
-            .getFromTransactionQueue(requiredTransactionNonce);
+            .getTransactionFromQueue(requiredTransactionNonce);
 
         checkTransaction(
             transaction.to,
@@ -216,8 +218,8 @@ contract SmartSafe is
         ];
         if (rejectionsCount >= OwnerManager.totalOwners / 2) {
             TransactionManager.requiredTransactionNonce++;
-            TransactionManager.increaseExecutedTransactionsSize();
-            TransactionManager.moveTransactionFromQueueToHistory(
+            TransactionManager.executedTransactionsSize++;
+            TransactionManager.moveTransactionFromQueueToExecuted(
                 requiredTransactionNonce
             );
         }

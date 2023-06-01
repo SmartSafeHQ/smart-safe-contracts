@@ -145,13 +145,13 @@ contract TransactionManager {
                 : getExecutedTransactions(_page);
     }
 
-    function getFromTransactionQueue(
+    function getTransactionFromQueue(
         uint64 _transactionNonce
     ) internal view returns (Transaction storage) {
         return transactionQueue[_transactionNonce];
     }
 
-    function getFromTransactionQueueSignatures(
+    function getSignaturesFromTransactionQueue(
         uint64 _transactionNonce
     ) internal view returns (bytes[] memory) {
         return transactionQueue[_transactionNonce].signatures;
@@ -213,9 +213,6 @@ contract TransactionManager {
             _transactionProposalSignature
         );
 
-        transactionApprovals[_transactionNonce][
-            _signer
-        ] = _transactionApprovalType;
         // increase transaction approvals or rejections based on `_signer`'s choice
         if (_transactionApprovalType == TransactionApproval.Approved) {
             transactionApprovalsCount[_transactionNonce]++;
@@ -232,21 +229,17 @@ contract TransactionManager {
         emit TransactionSignatureAdded(_transactionNonce);
     }
 
-    function increaseExecutedTransactionsSize() internal {
+    function removeTransaction() public virtual {
+        moveTransactionFromQueueToExecuted(requiredTransactionNonce);
+
+        requiredTransactionNonce++;
         executedTransactionsSize++;
     }
 
-    function removeTransaction() public virtual {
-        moveTransactionFromQueueToHistory(requiredTransactionNonce);
-
-        requiredTransactionNonce++;
-        increaseExecutedTransactionsSize();
-    }
-
-    function moveTransactionFromQueueToHistory(
+    function moveTransactionFromQueueToExecuted(
         uint64 _transactionNonce
     ) internal {
-        Transaction memory executedTransaction = getFromTransactionQueue(
+        Transaction memory executedTransaction = getTransactionFromQueue(
             _transactionNonce
         );
 
