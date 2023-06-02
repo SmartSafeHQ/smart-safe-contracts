@@ -8,7 +8,7 @@ pragma solidity ^0.8.19;
 contract TransactionManager {
     error OwnerAlreadySigned();
     error OwnersLengthOutOfBounds();
-    error TransactionAlreadyProcessed();
+    error TransactionAlreadyExecuted();
     error InvalidTransactionApprovalType();
 
     event TransactionSignatureAdded(uint64 indexed);
@@ -92,7 +92,7 @@ contract TransactionManager {
     function getQueueTransactions(
         uint32 _page
     ) internal view returns (Transaction[] memory) {
-        // `requiredTransactionNonce` serves a pointer to at which index
+        // `requiredTransactionNonce` is used as a pointer to at which index
         // start fetching `Transaction`s.
         uint64 startIndex = (_page * MAX_RETURN_SIZE) +
             requiredTransactionNonce;
@@ -147,7 +147,7 @@ contract TransactionManager {
 
     function getTransactionFromQueue(
         uint64 _transactionNonce
-    ) internal view returns (Transaction storage) {
+    ) internal view returns (Transaction memory) {
         return transactionQueue[_transactionNonce];
     }
 
@@ -244,7 +244,7 @@ contract TransactionManager {
         );
 
         if (executedTransaction.createdAt == 0) {
-            revert TransactionAlreadyProcessed();
+            revert TransactionAlreadyExecuted();
         }
 
         transactionExecuted[_transactionNonce] = executedTransaction;
