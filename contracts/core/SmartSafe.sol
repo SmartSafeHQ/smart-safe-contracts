@@ -47,7 +47,7 @@ contract SmartSafe is
             revert OwnerManager.OutOfBoundsThreshold();
         }
 
-        OwnerManager.ow_setupOwners(_owners, _threshold);
+        OwnerManager._setupOwners(_owners, _threshold);
     }
 
     /**
@@ -115,8 +115,10 @@ contract SmartSafe is
 
         TransactionManager.requiredTransactionNonce++;
         TransactionManager.executedTransactionsSize++;
-        TransactionManager.moveTransactionFromQueueToExecuted(
-            _transactionNonce
+        TransactionManager.moveTransaction(
+            TransactionManager.transactionQueue,
+            TransactionManager.transactionExecuted,
+            requiredTransactionNonce
         );
 
         emit TransactionExecutionSucceeded(_transactionNonce);
@@ -127,6 +129,7 @@ contract SmartSafe is
         address _to,
         uint256 _value,
         bytes calldata _data,
+        TransactionManager.TransactionType _transactionType,
         // signature related
         address _transactionProposalSigner,
         bytes memory _transactionProposalSignature
@@ -144,6 +147,7 @@ contract SmartSafe is
             _to,
             _value,
             _data,
+            _transactionType,
             _transactionProposalSigner,
             _transactionProposalSignature
         );
@@ -152,10 +156,22 @@ contract SmartSafe is
         // This way users don't need to spend gas with two transactions
         // (proposal + execution);
         if (OwnerManager.threshold == 1) {
-            uint64 currentTransactionNonce = TransactionManager
-                .transactionNonce - 1;
+            if (
+                _transactionType == TransactionManager.TransactionType.Ordered
+            ) {
+                uint64 currentTransactionNonce = TransactionManager
+                    .transactionNonce - 1;
 
-            executeTransaction(currentTransactionNonce);
+                executeTransaction(currentTransactionNonce);
+            } else if (
+                _transactionType == TransactionManager.TransactionType.Scheduled
+            ) {
+                TransactionManager.moveTransaction(
+                    TransactionManager.transactionQueue,
+                    TransactionManager.transactionScheduled,
+                    requiredTransactionNonce
+                );
+            }
         }
     }
 
@@ -219,7 +235,9 @@ contract SmartSafe is
         if (rejectionsCount >= OwnerManager.totalOwners / 2) {
             TransactionManager.requiredTransactionNonce++;
             TransactionManager.executedTransactionsSize++;
-            TransactionManager.moveTransactionFromQueueToExecuted(
+            TransactionManager.moveTransaction(
+                TransactionManager.transactionQueue,
+                TransactionManager.transactionExecuted,
                 requiredTransactionNonce
             );
         }
@@ -229,7 +247,67 @@ contract SmartSafe is
             requiredTransactionNonce
         ];
         if (approvalsCount == OwnerManager.threshold) {
-            executeTransaction(requiredTransactionNonce);
+            if (
+                transaction.transactionType ==
+                TransactionManager.TransactionType.Ordered
+            ) {
+                executeTransaction(requiredTransactionNonce);
+            } else if (
+                transaction.transactionType ==
+                TransactionManager.TransactionType.Scheduled
+            ) {
+                TransactionManager.requiredTransactionNonce++;
+                TransactionManager.moveTransaction(
+                    TransactionManager.transactionQueue,
+                    TransactionManager.transactionScheduled,
+                    requiredTransactionNonce
+                );
+            }
         }
+    }
+
+    function checkUpkeep(
+        bytes calldata _checkData
+    ) external view returns (bool _upkeepNeeded, bytes memory _performData) {
+        (uint64 transactionNonce, uint256 executionTime) = abi.decode(
+            _checkData,
+            (uint64, uint256)
+        );
+
+        if (executionTime < block.timestamp) {
+            revert();
+        }
+
+        _upkeepNeeded = true;
+        _performData = abi.encode(transactionNonce);
+
+        return (_upkeepNeeded, _performData);
+    }
+
+    function performUpkeep(bytes calldata _performData) external {
+        uint64 transactionNonce = abi.decode(_performData, (uint64));
+
+        TransactionManager.Transaction
+            memory scheduledTransaction = TransactionManager
+                .transactionScheduled[transactionNonce];
+
+        if (scheduledTransaction.createdAt == 0) {
+            revert();
+        }
+
+        (bool success, bytes memory data) = scheduledTransaction.to.call{
+            value: scheduledTransaction.value
+        }(scheduledTransaction.data);
+
+        if (!success && data.length > 0) {
+            revert TransactionExecutionFailed(data);
+        }
+
+        TransactionManager.moveTransaction(
+            TransactionManager.transactionScheduled,
+            TransactionManager.transactionExecuted,
+            transactionNonce
+        );
+        TransactionManager.executedTransactionsSize++;
     }
 }

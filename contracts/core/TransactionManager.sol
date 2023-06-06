@@ -25,6 +25,11 @@ contract TransactionManager {
         Executed
     }
 
+    enum TransactionType {
+        Ordered,
+        Scheduled
+    }
+
     struct TransactionApprovals {
         address ownerAddress;
         TransactionApproval approvalStatus;
@@ -34,6 +39,7 @@ contract TransactionManager {
         address from;
         address to;
         uint64 transactionNonce;
+        TransactionType transactionType;
         uint256 value;
         uint256 createdAt;
         bytes data;
@@ -46,8 +52,9 @@ contract TransactionManager {
 
     uint8 internal constant MAX_RETURN_SIZE = 10;
 
-    mapping(uint64 => Transaction) internal transactionExecuted;
     mapping(uint64 => Transaction) internal transactionQueue;
+    mapping(uint64 => Transaction) internal transactionExecuted;
+    mapping(uint64 => Transaction) internal transactionScheduled;
 
     mapping(uint64 => uint8) internal transactionApprovalsCount;
     mapping(uint64 => uint8) internal transactionRejectionsCount;
@@ -161,6 +168,7 @@ contract TransactionManager {
         address _to,
         uint256 _value,
         bytes calldata _data,
+        TransactionType _transactionType,
         address _signer,
         bytes memory _transactionProposalSignature
     ) internal {
@@ -172,6 +180,7 @@ contract TransactionManager {
             to: _to,
             value: _value,
             transactionNonce: transactionNonce,
+            transactionType: _transactionType,
             createdAt: block.timestamp,
             data: _data,
             signatures: signatures
@@ -230,25 +239,29 @@ contract TransactionManager {
     }
 
     function removeTransaction() public virtual {
-        moveTransactionFromQueueToExecuted(requiredTransactionNonce);
+        moveTransaction(
+            transactionQueue,
+            transactionExecuted,
+            requiredTransactionNonce
+        );
 
         requiredTransactionNonce++;
         executedTransactionsSize++;
     }
 
-    function moveTransactionFromQueueToExecuted(
+    function moveTransaction(
+        mapping(uint64 => Transaction) storage _fromMapping,
+        mapping(uint64 => Transaction) storage _toMapping,
         uint64 _transactionNonce
     ) internal {
-        Transaction memory executedTransaction = getTransactionFromQueue(
-            _transactionNonce
-        );
+        Transaction memory transaction = _fromMapping[_transactionNonce];
 
-        if (executedTransaction.createdAt == 0) {
+        if (transaction.createdAt == 0) {
             revert TransactionAlreadyExecuted();
         }
 
-        transactionExecuted[_transactionNonce] = executedTransaction;
+        _toMapping[_transactionNonce] = transaction;
 
-        delete transactionQueue[_transactionNonce];
+        delete _fromMapping[_transactionNonce];
     }
 }

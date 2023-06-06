@@ -35,7 +35,7 @@ contract OwnerManager is SelfAuthorized {
         }
     }
 
-    function ow_setupOwners(
+    function _setupOwners(
         address[] memory _owners,
         uint8 _threshold
     ) internal {
