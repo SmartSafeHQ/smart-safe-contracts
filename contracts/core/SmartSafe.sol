@@ -6,6 +6,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 
 import {OwnerManager} from "./OwnerManager.sol";
 import {FallbackManager} from "./FallbackManager.sol";
+import {ExecutorManager} from "./ExecutorManager.sol";
 import {SignatureManager} from "./SignatureManager.sol";
 import {TransactionManager} from "./TransactionManager.sol";
 
@@ -19,26 +20,27 @@ contract SmartSafe is
     OwnerManager,
     TransactionManager,
     SignatureManager,
+    ExecutorManager,
     FallbackManager
 {
     error InsufficientBalance();
     error InsufficientSignatures();
     error SignaturesAlreadyCollected();
-    error TransactionExecutionFailed(bytes);
     error TransactionNonceError(uint64 required, uint64 received);
 
     event TransactionExecutionSucceeded(uint64);
 
     /**
      * @dev
-     * - This function essentially initializes a Smart Safe after user
+     * This function essentially initializes a Smart Safe after user
      * deploys a proxy.
      * @notice User can optionally send network native tokens (ETH, BNB, etc).
      */
-    function setupOwners(
-        address[] memory _owners,
-        uint8 _threshold
-    ) external payable initializer {
+    function setupOwners(address[] memory _owners, uint8 _threshold)
+        external
+        payable
+        initializer
+    {
         if (
             _owners.length == 0 ||
             _threshold == 0 ||
@@ -47,7 +49,7 @@ contract SmartSafe is
             revert OwnerManager.OutOfBoundsThreshold();
         }
 
-        OwnerManager.ow_setupOwners(_owners, _threshold);
+        OwnerManager._setupOwners(_owners, _threshold);
     }
 
     /**
@@ -105,18 +107,18 @@ contract SmartSafe is
             revert InsufficientSignatures();
         }
 
-        (bool success, bytes memory data) = proposedTransaction.to.call{
-            value: proposedTransaction.value
-        }(proposedTransaction.data);
-
-        if (!success && data.length > 0) {
-            revert TransactionExecutionFailed(data);
-        }
+        ExecutorManager.executeTransaction(
+            proposedTransaction.to,
+            proposedTransaction.value,
+            proposedTransaction.data
+        );
 
         TransactionManager.requiredTransactionNonce++;
         TransactionManager.executedTransactionsSize++;
-        TransactionManager.moveTransactionFromQueueToExecuted(
-            _transactionNonce
+        TransactionManager.moveTransaction(
+            TransactionManager.transactionQueue,
+            TransactionManager.transactionExecuted,
+            requiredTransactionNonce
         );
 
         emit TransactionExecutionSucceeded(_transactionNonce);
@@ -127,6 +129,7 @@ contract SmartSafe is
         address _to,
         uint256 _value,
         bytes calldata _data,
+        TransactionManager.AutomationTrigger _trigger,
         // signature related
         address _transactionProposalSigner,
         bytes memory _transactionProposalSignature
@@ -144,6 +147,7 @@ contract SmartSafe is
             _to,
             _value,
             _data,
+            _trigger,
             _transactionProposalSigner,
             _transactionProposalSignature
         );
@@ -152,10 +156,18 @@ contract SmartSafe is
         // This way users don't need to spend gas with two transactions
         // (proposal + execution);
         if (OwnerManager.threshold == 1) {
-            uint64 currentTransactionNonce = TransactionManager
-                .transactionNonce - 1;
+            if (_trigger == TransactionManager.AutomationTrigger.None) {
+                uint64 currentTransactionNonce = TransactionManager
+                    .transactionNonce - 1;
 
-            executeTransaction(currentTransactionNonce);
+                executeTransaction(currentTransactionNonce);
+            } else if (_trigger != TransactionManager.AutomationTrigger.None) {
+                TransactionManager.moveTransaction(
+                    TransactionManager.transactionQueue,
+                    TransactionManager.transactionScheduled,
+                    requiredTransactionNonce
+                );
+            }
         }
     }
 
@@ -165,9 +177,11 @@ contract SmartSafe is
         TransactionManager.removeTransaction();
     }
 
-    function getTransactionApprovals(
-        uint64 _transactionNonce
-    ) external view returns (TransactionManager.TransactionApprovals[] memory) {
+    function getTransactionApprovals(uint64 _transactionNonce)
+        external
+        view
+        returns (TransactionManager.TransactionApprovals[] memory)
+    {
         return
             TransactionManager.getTransactionApprovals(
                 _transactionNonce,
@@ -219,7 +233,9 @@ contract SmartSafe is
         if (rejectionsCount >= OwnerManager.totalOwners / 2) {
             TransactionManager.requiredTransactionNonce++;
             TransactionManager.executedTransactionsSize++;
-            TransactionManager.moveTransactionFromQueueToExecuted(
+            TransactionManager.moveTransaction(
+                TransactionManager.transactionQueue,
+                TransactionManager.transactionExecuted,
                 requiredTransactionNonce
             );
         }
@@ -229,7 +245,68 @@ contract SmartSafe is
             requiredTransactionNonce
         ];
         if (approvalsCount == OwnerManager.threshold) {
-            executeTransaction(requiredTransactionNonce);
+            if (
+                transaction.trigger == TransactionManager.AutomationTrigger.None
+            ) {
+                executeTransaction(requiredTransactionNonce);
+            } else if (
+                transaction.trigger != TransactionManager.AutomationTrigger.None
+            ) {
+                TransactionManager.requiredTransactionNonce++;
+                TransactionManager.moveTransaction(
+                    TransactionManager.transactionQueue,
+                    TransactionManager.transactionScheduled,
+                    requiredTransactionNonce
+                );
+            }
         }
+    }
+
+    /**
+     * @dev The below 2 functions should be moved to an external contract
+     * in order to keep the core functionality isolated from other functionalities
+     * considered external.
+     */
+    function checkUpkeep(bytes calldata _checkData)
+        external
+        view
+        returns (bool _upkeepNeeded, bytes memory _performData)
+    {
+        (uint64 transactionNonce, uint256 executionTime) = abi.decode(
+            _checkData,
+            (uint64, uint256)
+        );
+
+        if (executionTime < block.timestamp) {
+            return (false, "0x");
+        }
+
+        _upkeepNeeded = true;
+        _performData = abi.encode(transactionNonce);
+
+        return (_upkeepNeeded, _performData);
+    }
+
+    function performUpkeep(bytes calldata _performData) external {
+        uint64 transactionNonce = abi.decode(_performData, (uint64));
+
+        TransactionManager.Transaction
+            memory scheduledTransaction = TransactionManager
+                .transactionScheduled[transactionNonce];
+
+        if (
+            scheduledTransaction.trigger ==
+            TransactionManager.AutomationTrigger.None
+        ) {
+            revert();
+        }
+
+        ExecutorManager.executeTransaction(
+            scheduledTransaction.to,
+            scheduledTransaction.value,
+            scheduledTransaction.data
+        );
+
+        TransactionManager.executedTransactionsSize++;
     }
 }

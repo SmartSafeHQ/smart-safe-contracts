@@ -35,8 +35,13 @@ const config: HardhatUserConfig = {
         {
           balance: "1000000000000000000000",
           privateKey:
-            "cc6d63f85de8fef05446ebdd3c537c72152d0fc437fd7aa62b3019b79bd1fdd4",
+            "0xcc6d63f85de8fef05446ebdd3c537c72152d0fc437fd7aa62b3019b79bd1fdd4",
         },
+        {
+          balance: "1000000000000000000000",
+          privateKey:
+            "0x3e8c49e06a07dae1601ee50f10de0dcc6ef73afae1edca85ba7d598f139cfc9d",
+        }
       ],
     },
     polygon: {
@@ -44,7 +49,28 @@ const config: HardhatUserConfig = {
       accounts: [
         "0x3e8c49e06a07dae1601ee50f10de0dcc6ef73afae1edca85ba7d598f139cfc9d",
       ],
-      url: "https://rpc.ankr.com/polygon_mumbai",
+      url: "https://rpc-mumbai.maticvigil.com/",
+    },
+    bnb: {
+      chainId: 97,
+      accounts: [
+        "0x3e8c49e06a07dae1601ee50f10de0dcc6ef73afae1edca85ba7d598f139cfc9d",
+      ],
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+    },
+    okt: {
+      chainId: 65,
+      accounts: [
+        "0x3e8c49e06a07dae1601ee50f10de0dcc6ef73afae1edca85ba7d598f139cfc9d",
+      ],
+      url: "https://exchaintestrpc.okex.org/",
+    },
+    sepolia: {
+      chainId: 11155111,
+      accounts: [
+        "0x3e8c49e06a07dae1601ee50f10de0dcc6ef73afae1edca85ba7d598f139cfc9d",
+      ],
+      url: "https://rpc2.sepolia.org/",
     },
   },
 };
