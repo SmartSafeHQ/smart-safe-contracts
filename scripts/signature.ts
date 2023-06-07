@@ -1,7 +1,5 @@
 import { ethers } from "hardhat";
-import { randomBytes } from "node:crypto";
 
-import SMART_SAFE_ABI from "./utils/SmartSafeABI.json";
 import type { SmartSafe } from "../typechain-types";
 import type { SignerWithAddress } from "../node_modules/@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
@@ -24,26 +22,9 @@ async function getTransactioNonce(contract: SmartSafe) {
   return Number(nonce);
 }
 
-async function decodeHexData() {
-  new ethers.utils.AbiCoder().decode(
-    ["string"],
-    "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002645524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e63650000000000000000000000000000000000000000000000000000"
-  );
-}
-
 function hashString(data: string) {
   const stringToBytes = ethers.utils.toUtf8Bytes(data);
   return ethers.utils.keccak256(stringToBytes);
-}
-
-function calculateSalt() {
-  return ethers.utils.keccak256(randomBytes(32));
-}
-
-function parseContractErrorEvent() {
-  const iface = new ethers.utils.Interface(SMART_SAFE_ABI);
-
-  return iface.parseError("0xe6c4247b");
 }
 
 function getHashOfSignatureStruct(
@@ -92,7 +73,7 @@ async function signTypedMessage(
 
   const values = {
     from: verifyingContract,
-    to: "0xd9145CCE52D386f254917e481eB44e9943F39138",
+    to: "0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005",
     transactionNonce: nonce,
     value: "0",
     data: ethers.utils.keccak256(
@@ -119,7 +100,7 @@ async function signTypedMessage(
 
   const { hashedEncodedStruct } = getHashOfSignatureStruct(
     verifyingContract, // always the Smart Safe address
-    "0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47",
+    "0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005",
     nonce,
     "0", //ethers.utils.parseEther("1").toString(),
     ethers.utils.keccak256(
@@ -141,24 +122,40 @@ async function signTypedMessage(
   return { typedDataHash, signedTypedDataHash };
 }
 
+function decode() {
+  console.log(
+    "decoded value:",
+    new ethers.utils.AbiCoder().decode(
+      ["uint8", "uint256"],
+      "0x000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000647f9d23"
+    )
+  );
+}
+
+function encode() {
+  console.log(
+    "encoded value:",
+    new ethers.utils.AbiCoder().encode(["uint64","uint256"], [0, 1686167879])
+  );
+}
+
 async function main() {
   const signer = (await ethers.getSigners())[0];
   const signer2 = (await ethers.getSigners())[1];
   const signer3 = (await ethers.getSigners())[2];
+  const signer4 = (await ethers.getSigners())[3];
 
-  console.log("Signer address:", signer.address, "\n");
-  console.log("SALT", calculateSalt());
-
-  const contract = await deployContract([signer.address], 1);
-
-  const nonce = await getTransactioNonce(contract);
+  console.log("Signer address:", signer4.address, "\n");
 
   const { signedTypedDataHash, typedDataHash } = await signTypedMessage(
     1,
-    "0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47",
-    signer2,
+    "0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005",
+    signer,
     0
   );
+
+  // decode()
+  encode();
 
   console.log({ signedTypedDataHash, typedDataHash });
 }

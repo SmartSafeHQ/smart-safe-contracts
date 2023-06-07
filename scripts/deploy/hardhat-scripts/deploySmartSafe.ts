@@ -1,12 +1,15 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const Contract = await ethers.getContractFactory("SmartSafe");
-  const contract = await Contract.deploy();
+  const signer = (await ethers.getSigners())[0];
 
-  await contract.deployed();
+  const SmartSafe = await ethers.getContractFactory("SmartSafe", signer);
 
-  console.log(`SmartSafe deployed to ${contract.address}`);
+  const smartSafe = await SmartSafe.deploy();
+
+  await smartSafe.deployed();
+
+  console.log(smartSafe.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

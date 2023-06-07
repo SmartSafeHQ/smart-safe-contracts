@@ -25,9 +25,12 @@ contract TransactionManager {
         Executed
     }
 
-    enum TransactionType {
-        Ordered,
-        Scheduled
+    enum AutomationTrigger {
+        None,
+        Daily,
+        Weekly,
+        Monthly,
+        Yearly
     }
 
     struct TransactionApprovals {
@@ -39,11 +42,11 @@ contract TransactionManager {
         address from;
         address to;
         uint64 transactionNonce;
-        TransactionType transactionType;
         uint256 value;
         uint256 createdAt;
         bytes data;
         bytes[] signatures;
+        AutomationTrigger trigger;
     }
 
     uint64 public transactionNonce = 0;
@@ -168,7 +171,7 @@ contract TransactionManager {
         address _to,
         uint256 _value,
         bytes calldata _data,
-        TransactionType _transactionType,
+        AutomationTrigger _trigger,
         address _signer,
         bytes memory _transactionProposalSignature
     ) internal {
@@ -180,10 +183,10 @@ contract TransactionManager {
             to: _to,
             value: _value,
             transactionNonce: transactionNonce,
-            transactionType: _transactionType,
             createdAt: block.timestamp,
             data: _data,
-            signatures: signatures
+            signatures: signatures,
+            trigger: _trigger
         });
 
         uint64 currentTransactionNonce = transactionNonce;
