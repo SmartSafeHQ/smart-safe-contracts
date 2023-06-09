@@ -61,26 +61,6 @@ async function signTypedMessage(
     verifyingContract,
   };
 
-  const types = {
-    Signature: [
-      { name: "from", type: "address" },
-      { name: "to", type: "address" },
-      { name: "transactionNonce", type: "uint64" },
-      { name: "value", type: "uint256" },
-      { name: "data", type: "bytes32" },
-    ],
-  };
-
-  const values = {
-    from: verifyingContract,
-    to: "0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005",
-    transactionNonce: nonce,
-    value: "0",
-    data: ethers.utils.keccak256(
-      "0x00b9573b0000000000000000000000004b20993bc481177ec7e8f571cecae8a9e22c02db0000000000000000000000000000000000000000000000000000000000000002"
-    ),
-  };
-
   const typeHash = hashString(
     "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
   );
@@ -100,7 +80,7 @@ async function signTypedMessage(
 
   const { hashedEncodedStruct } = getHashOfSignatureStruct(
     verifyingContract, // always the Smart Safe address
-    "0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005",
+    "0xDA0bab807633f07f013f94DD0E6A4F96F8742B53",
     nonce,
     "0", //ethers.utils.parseEther("1").toString(),
     ethers.utils.keccak256(
@@ -122,20 +102,20 @@ async function signTypedMessage(
   return { typedDataHash, signedTypedDataHash };
 }
 
-function decode() {
-  console.log(
-    "decoded value:",
-    new ethers.utils.AbiCoder().decode(
-      ["uint8", "uint256"],
-      "0x000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000647f9d23"
-    )
-  );
-}
+// function decode() {
+//   console.log(
+//     "decoded value:",
+//     new ethers.utils.AbiCoder().decode(
+//       ["uint8", "uint256"],
+//       "0x000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000647f9d23"
+//     )
+//   );
+// }
 
 function encode() {
   console.log(
     "encoded value:",
-    new ethers.utils.AbiCoder().encode(["uint64","uint256"], [0, 1686167879])
+    new ethers.utils.AbiCoder().encode(["uint64"], [0])
   );
 }
 
@@ -149,8 +129,8 @@ async function main() {
 
   const { signedTypedDataHash, typedDataHash } = await signTypedMessage(
     1,
-    "0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005",
-    signer,
+    "0xDA0bab807633f07f013f94DD0E6A4F96F8742B53",
+    signer2,
     0
   );
 

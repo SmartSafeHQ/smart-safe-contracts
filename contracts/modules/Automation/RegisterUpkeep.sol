@@ -1,96 +1,39 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
-import {AutomationRegistryInterface, State} from "@chainlink/contracts/src/v0.8/interfaces/AutomationRegistryInterface2_0.sol";
+import {IKeeperRegistrar} from "../../interfaces/chainlink/IKeeperRegistrar.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 
-interface KeeperRegistrarInterface {
-    function register(
-        string memory name,
-        bytes calldata encryptedEmail,
-        address upkeepContract,
-        uint32 gasLimit,
-        address adminAddress,
-        bytes calldata checkData,
-        bytes calldata offchainConfig,
-        uint96 amount,
-        address sender
-    ) external;
-}
-
 contract RegisterUpkeep {
-    struct Params {
-        string name;
-        bytes encryptedEmail;
-        address upkeepContract;
-        uint32 gasLimit;
-        address adminAddress;
-        bytes checkData;
-        bytes offchainConfig;
-        uint96 amount;
-    }
+    event UpkeepRegistered(uint256);
+
+    error UpKeepRegistrationFailed(bytes);
 
     LinkTokenInterface private immutable linkTokenContract;
-    address private immutable registrarContract;
-    AutomationRegistryInterface private immutable registryContract;
-    bytes4 private registerSig = KeeperRegistrarInterface.register.selector;
+    IKeeperRegistrar private immutable registrarContract;
 
-    mapping(address => mapping(uint64 => uint256)) public upkeepsPerSmartSafe;
+    // safe address -> safe tx nonce -> upkeepID
+    mapping(address => mapping(uint64 => uint256)) public upKeepsPerSmartSafe;
 
     constructor(
-        LinkTokenInterface _link,
-        address _registrar,
-        AutomationRegistryInterface _registry
+        LinkTokenInterface _linkTokenAddress,
+        IKeeperRegistrar _registrarContractAddress
     ) {
-        linkTokenContract = _link;
-        registrarContract = _registrar;
-        registryContract = _registry;
+        linkTokenContract = _linkTokenAddress;
+        registrarContract = _registrarContractAddress;
     }
 
-    function registerAndPredictID(Params memory _params) external {
-        (State memory state, , , , ) = registryContract.getState();
-        uint256 oldNonce = state.nonce;
-        bytes memory payload = abi.encode(
-            _params.name,
-            _params.encryptedEmail,
-            _params.upkeepContract,
-            _params.gasLimit,
-            _params.adminAddress,
-            _params.checkData,
-            _params.offchainConfig,
-            _params.amount,
-            address(this)
-        );
+    function registerAndPredictID(
+        IKeeperRegistrar.RegistrationParams memory _params
+    ) external {
+        linkTokenContract.approve(address(registrarContract), _params.amount);
 
-        linkTokenContract.transferAndCall(
-            registrarContract,
-            _params.amount,
-            bytes.concat(registerSig, payload)
-        );
-        (state, , , , ) = registryContract.getState();
-        uint256 newNonce = state.nonce;
+        uint256 upKeepID = registrarContract.registerUpkeep(_params);
 
-        if (newNonce == oldNonce + 1) {
-            (uint64 transactionNonce, ) = abi.decode(
-                _params.checkData,
-                (uint64, uint256)
-            );
+        uint64 _transactionNonce = abi.decode(_params.checkData, (uint64));
 
-            uint256 upkeepID = uint256(
-                keccak256(
-                    abi.encodePacked(
-                        blockhash(block.number - 1),
-                        address(registryContract),
-                        uint32(oldNonce)
-                    )
-                )
-            );
-
-            upkeepsPerSmartSafe[_params.upkeepContract][
-                transactionNonce
-            ] = upkeepID;
-        } else {
-            revert("auto-approve disabled");
-        }
+        upKeepsPerSmartSafe[_params.upkeepContract][
+            _transactionNonce
+        ] = upKeepID;
     }
 }

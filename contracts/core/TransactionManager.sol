@@ -22,11 +22,15 @@ contract TransactionManager {
 
     enum TransactionStatus {
         Queued,
-        Executed
+        Executed,
+        Scheduled
     }
 
-    enum AutomationTrigger {
+    enum TransactionRecurrence {
         None,
+        EveryMinute,
+        EveryFiveMinutes,
+        Hourly,
         Daily,
         Weekly,
         Monthly,
@@ -46,18 +50,21 @@ contract TransactionManager {
         uint256 createdAt;
         bytes data;
         bytes[] signatures;
-        AutomationTrigger trigger;
+        TransactionRecurrence trigger;
     }
 
     uint64 public transactionNonce = 0;
     uint64 public requiredTransactionNonce = 0;
     uint64 internal executedTransactionsSize = 0;
+    uint64 internal scheduledTransactionsSize = 0;
 
     uint8 internal constant MAX_RETURN_SIZE = 10;
 
     mapping(uint64 => Transaction) internal transactionQueue;
     mapping(uint64 => Transaction) internal transactionExecuted;
     mapping(uint64 => Transaction) internal transactionScheduled;
+    // tx nonce -> block.timestamp
+    mapping(uint64 => uint256) internal lastExecutionTime;
 
     mapping(uint64 => uint8) internal transactionApprovalsCount;
     mapping(uint64 => uint8) internal transactionRejectionsCount;
@@ -99,9 +106,11 @@ contract TransactionManager {
         return nonZeroApprovals;
     }
 
-    function getQueueTransactions(
-        uint32 _page
-    ) internal view returns (Transaction[] memory) {
+    function getQueueTransactions(uint32 _page)
+        internal
+        view
+        returns (Transaction[] memory)
+    {
         // `requiredTransactionNonce` is used as a pointer to at which index
         // start fetching `Transaction`s.
         uint64 startIndex = (_page * MAX_RETURN_SIZE) +
@@ -124,9 +133,34 @@ contract TransactionManager {
         return listOfTransactions;
     }
 
-    function getExecutedTransactions(
-        uint32 _page
-    ) internal view returns (Transaction[] memory) {
+    function getScheduledTransactions(uint32 _page)
+        internal
+        view
+        returns (Transaction[] memory)
+    {
+        uint64 startIndex = _page * MAX_RETURN_SIZE;
+        uint64 endIndex = startIndex + MAX_RETURN_SIZE;
+        if (endIndex > scheduledTransactionsSize) {
+            endIndex = scheduledTransactionsSize;
+        }
+        uint64 length = endIndex - startIndex;
+        Transaction[] memory listOfTransactions = new Transaction[](length);
+
+        for (uint64 i = 0; i < length; i++) {
+            if (startIndex + i >= scheduledTransactionsSize) {
+                break;
+            }
+            listOfTransactions[i] = transactionScheduled[startIndex + i];
+        }
+
+        return listOfTransactions;
+    }
+
+    function getExecutedTransactions(uint32 _page)
+        internal
+        view
+        returns (Transaction[] memory)
+    {
         uint64 startIndex = _page * MAX_RETURN_SIZE;
         uint64 endIndex = startIndex + MAX_RETURN_SIZE;
         if (endIndex > executedTransactionsSize) {
@@ -145,25 +179,33 @@ contract TransactionManager {
         return listOfTransactions;
     }
 
-    function getTransactions(
-        uint8 _page,
-        TransactionStatus _transactionStatus
-    ) external view returns (Transaction[] memory) {
-        return
-            _transactionStatus == TransactionStatus.Queued
-                ? getQueueTransactions(_page)
-                : getExecutedTransactions(_page);
+    function getTransactions(uint8 _page, TransactionStatus _transactionStatus)
+        external
+        view
+        returns (Transaction[] memory _transactions)
+    {
+        if (_transactionStatus == TransactionStatus.Queued) {
+            return getQueueTransactions(_page);
+        } else if (_transactionStatus == TransactionStatus.Executed) {
+            return getExecutedTransactions(_page);
+        } else if (_transactionStatus == TransactionStatus.Scheduled) {
+            return getScheduledTransactions(_page);
+        }
     }
 
-    function getTransactionFromQueue(
-        uint64 _transactionNonce
-    ) internal view returns (Transaction memory) {
+    function getTransactionFromQueue(uint64 _transactionNonce)
+        internal
+        view
+        returns (Transaction memory)
+    {
         return transactionQueue[_transactionNonce];
     }
 
-    function getSignaturesFromTransactionQueue(
-        uint64 _transactionNonce
-    ) internal view returns (bytes[] memory) {
+    function getSignaturesFromTransactionQueue(uint64 _transactionNonce)
+        internal
+        view
+        returns (bytes[] memory)
+    {
         return transactionQueue[_transactionNonce].signatures;
     }
 
@@ -171,7 +213,7 @@ contract TransactionManager {
         address _to,
         uint256 _value,
         bytes calldata _data,
-        AutomationTrigger _trigger,
+        TransactionRecurrence _trigger,
         address _signer,
         bytes memory _transactionProposalSignature
     ) internal {

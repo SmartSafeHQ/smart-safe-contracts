@@ -115,6 +115,7 @@ contract SmartSafe is
 
         TransactionManager.requiredTransactionNonce++;
         TransactionManager.executedTransactionsSize++;
+
         TransactionManager.moveTransaction(
             TransactionManager.transactionQueue,
             TransactionManager.transactionExecuted,
@@ -129,7 +130,7 @@ contract SmartSafe is
         address _to,
         uint256 _value,
         bytes calldata _data,
-        TransactionManager.AutomationTrigger _trigger,
+        TransactionManager.TransactionRecurrence _trigger,
         // signature related
         address _transactionProposalSigner,
         bytes memory _transactionProposalSignature
@@ -156,17 +157,32 @@ contract SmartSafe is
         // This way users don't need to spend gas with two transactions
         // (proposal + execution);
         if (OwnerManager.threshold == 1) {
-            if (_trigger == TransactionManager.AutomationTrigger.None) {
+            // no recurrence, just execute the transaction
+            if (_trigger == TransactionManager.TransactionRecurrence.None) {
                 uint64 currentTransactionNonce = TransactionManager
                     .transactionNonce - 1;
 
                 executeTransaction(currentTransactionNonce);
-            } else if (_trigger != TransactionManager.AutomationTrigger.None) {
+            } else if (
+                _trigger == TransactionManager.TransactionRecurrence.EveryMinute
+            ) {
+                TransactionManager.Transaction
+                    memory transaction = TransactionManager
+                        .getTransactionFromQueue(
+                            TransactionManager.requiredTransactionNonce
+                        );
+
                 TransactionManager.moveTransaction(
                     TransactionManager.transactionQueue,
                     TransactionManager.transactionScheduled,
-                    requiredTransactionNonce
+                    TransactionManager.requiredTransactionNonce
                 );
+
+                TransactionManager.scheduledTransactionsSize++;
+                TransactionManager.requiredTransactionNonce++;
+                TransactionManager.lastExecutionTime[
+                    TransactionManager.requiredTransactionNonce
+                ] = transaction.createdAt;
             }
         }
     }
@@ -233,6 +249,7 @@ contract SmartSafe is
         if (rejectionsCount >= OwnerManager.totalOwners / 2) {
             TransactionManager.requiredTransactionNonce++;
             TransactionManager.executedTransactionsSize++;
+
             TransactionManager.moveTransaction(
                 TransactionManager.transactionQueue,
                 TransactionManager.transactionExecuted,
@@ -246,18 +263,22 @@ contract SmartSafe is
         ];
         if (approvalsCount == OwnerManager.threshold) {
             if (
-                transaction.trigger == TransactionManager.AutomationTrigger.None
+                transaction.trigger ==
+                TransactionManager.TransactionRecurrence.None
             ) {
                 executeTransaction(requiredTransactionNonce);
             } else if (
-                transaction.trigger != TransactionManager.AutomationTrigger.None
+                transaction.trigger !=
+                TransactionManager.TransactionRecurrence.None
             ) {
-                TransactionManager.requiredTransactionNonce++;
                 TransactionManager.moveTransaction(
                     TransactionManager.transactionQueue,
                     TransactionManager.transactionScheduled,
                     requiredTransactionNonce
                 );
+                
+                TransactionManager.scheduledTransactionsSize++;
+                TransactionManager.requiredTransactionNonce++;
             }
         }
     }
@@ -272,21 +293,42 @@ contract SmartSafe is
         view
         returns (bool _upkeepNeeded, bytes memory _performData)
     {
-        (uint64 transactionNonce, uint256 executionTime) = abi.decode(
-            _checkData,
-            (uint64, uint256)
-        );
+        uint64 transactionNonce = abi.decode(_checkData, (uint64));
 
-        if (executionTime < block.timestamp) {
-            return (false, "0x");
+        TransactionManager.Transaction
+            memory scheduledTransaction = TransactionManager
+                .transactionScheduled[transactionNonce];
+
+        if (
+            scheduledTransaction.trigger ==
+            TransactionManager.TransactionRecurrence.None
+        ) {
+            // not a recurrent transaction
+            revert();
         }
 
-        _upkeepNeeded = true;
-        _performData = abi.encode(transactionNonce);
+        if (
+            scheduledTransaction.trigger ==
+            TransactionManager.TransactionRecurrence.EveryMinute
+        ) {
+            if (
+                (block.timestamp -
+                    TransactionManager.lastExecutionTime[transactionNonce]) >
+                1 minutes
+            ) {
+                _upkeepNeeded = true;
+                _performData = abi.encode(transactionNonce);
 
-        return (_upkeepNeeded, _performData);
+                return (_upkeepNeeded, _performData);
+            }
+        }
     }
 
+    /**
+     * @dev THIS FUNCTION IS NOT SECURE YET. It isn't checking if the transaction
+     * should be executed at right date.
+     * @dev this is something we'll improve after the hackathon is over.
+     */
     function performUpkeep(bytes calldata _performData) external {
         uint64 transactionNonce = abi.decode(_performData, (uint64));
 
@@ -296,17 +338,16 @@ contract SmartSafe is
 
         if (
             scheduledTransaction.trigger ==
-            TransactionManager.AutomationTrigger.None
+            TransactionManager.TransactionRecurrence.EveryMinute
         ) {
-            revert();
+            TransactionManager.lastExecutionTime[transactionNonce] = block
+                .timestamp;
+
+            ExecutorManager.executeTransaction(
+                scheduledTransaction.to,
+                scheduledTransaction.value,
+                scheduledTransaction.data
+            );
         }
-
-        ExecutorManager.executeTransaction(
-            scheduledTransaction.to,
-            scheduledTransaction.value,
-            scheduledTransaction.data
-        );
-
-        TransactionManager.executedTransactionsSize++;
     }
 }
