@@ -5,8 +5,8 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import {OwnerManager} from "./OwnerManager.sol";
+import {ExecuteManager} from "./ExecuteManager.sol";
 import {FallbackManager} from "./FallbackManager.sol";
-import {ExecutorManager} from "./ExecutorManager.sol";
 import {SignatureManager} from "./SignatureManager.sol";
 import {TransactionManager} from "./TransactionManager.sol";
 
@@ -20,7 +20,7 @@ contract SmartSafe is
     OwnerManager,
     TransactionManager,
     SignatureManager,
-    ExecutorManager,
+    ExecuteManager,
     FallbackManager
 {
     error InsufficientBalance();
@@ -36,11 +36,10 @@ contract SmartSafe is
      * deploys a proxy.
      * @notice User can optionally send network native tokens (ETH, BNB, etc).
      */
-    function setupOwners(address[] memory _owners, uint8 _threshold)
-        external
-        payable
-        initializer
-    {
+    function setupOwners(
+        address[] memory _owners,
+        uint8 _threshold
+    ) external payable initializer {
         if (
             _owners.length == 0 ||
             _threshold == 0 ||
@@ -107,7 +106,7 @@ contract SmartSafe is
             revert InsufficientSignatures();
         }
 
-        ExecutorManager.executeTransaction(
+        ExecuteManager.executeTransaction(
             proposedTransaction.to,
             proposedTransaction.value,
             proposedTransaction.data
@@ -193,11 +192,9 @@ contract SmartSafe is
         TransactionManager.removeTransaction();
     }
 
-    function getTransactionApprovals(uint64 _transactionNonce)
-        external
-        view
-        returns (TransactionManager.TransactionApprovals[] memory)
-    {
+    function getTransactionApprovals(
+        uint64 _transactionNonce
+    ) external view returns (TransactionManager.TransactionApprovals[] memory) {
         return
             TransactionManager.getTransactionApprovals(
                 _transactionNonce,
@@ -276,7 +273,7 @@ contract SmartSafe is
                     TransactionManager.transactionScheduled,
                     requiredTransactionNonce
                 );
-                
+
                 TransactionManager.scheduledTransactionsSize++;
                 TransactionManager.requiredTransactionNonce++;
             }
@@ -288,11 +285,9 @@ contract SmartSafe is
      * in order to keep the core functionality isolated from other functionalities
      * considered external.
      */
-    function checkUpkeep(bytes calldata _checkData)
-        external
-        view
-        returns (bool _upkeepNeeded, bytes memory _performData)
-    {
+    function checkUpkeep(
+        bytes calldata _checkData
+    ) external view returns (bool _upkeepNeeded, bytes memory _performData) {
         uint64 transactionNonce = abi.decode(_checkData, (uint64));
 
         TransactionManager.Transaction
@@ -343,7 +338,7 @@ contract SmartSafe is
             TransactionManager.lastExecutionTime[transactionNonce] = block
                 .timestamp;
 
-            ExecutorManager.executeTransaction(
+            ExecuteManager.executeTransaction(
                 scheduledTransaction.to,
                 scheduledTransaction.value,
                 scheduledTransaction.data
