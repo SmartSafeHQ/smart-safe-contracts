@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 // vendor
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
