@@ -10,11 +10,15 @@ contract ExecuteManager {
         address _to,
         uint256 _value,
         bytes memory _data
-    ) internal {
-        (bool success, bytes memory data) = _to.call{value: _value}(_data);
+    ) internal returns (bytes memory) {
+        (bool success, bytes memory returnData) = _to.call{value: _value}(
+            _data
+        );
 
-        if (!success && data.length > 0) {
-            revert TransactionExecutionFailed(_data);
+        if (!success && returnData.length > 0) {
+            revert TransactionExecutionFailed(returnData);
         }
+
+        return returnData;
     }
 }

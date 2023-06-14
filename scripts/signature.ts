@@ -80,11 +80,11 @@ async function signTypedMessage(
 
   const { hashedEncodedStruct } = getHashOfSignatureStruct(
     verifyingContract, // always the Smart Safe address
-    "0xDA0bab807633f07f013f94DD0E6A4F96F8742B53",
+    "0x7C4e30a43ecC4d3231b5B07ed082329020D141F3",
     nonce,
     "0", //ethers.utils.parseEther("1").toString(),
     ethers.utils.keccak256(
-      "0x00b9573b0000000000000000000000004b20993bc481177ec7e8f571cecae8a9e22c02db0000000000000000000000000000000000000000000000000000000000000002"
+      "0x"
     )
   );
 
@@ -125,13 +125,13 @@ async function main() {
   const signer3 = (await ethers.getSigners())[2];
   const signer4 = (await ethers.getSigners())[3];
 
-  console.log("Signer address:", signer4.address, "\n");
+  console.log("Signer address:", signer2.address, "\n");
 
   const { signedTypedDataHash, typedDataHash } = await signTypedMessage(
     1,
-    "0xDA0bab807633f07f013f94DD0E6A4F96F8742B53",
+    "0x7C4e30a43ecC4d3231b5B07ed082329020D141F3",
     signer2,
-    0
+    1
   );
 
   // decode()
