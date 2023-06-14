@@ -8,7 +8,7 @@ import {ISmartSafe} from "../../interfaces/core/ISmartSafe.sol";
 import {ApprovalStatus, TransactionState, TransactionApproval, Transaction} from "../../interfaces/core/ITransactionManager.sol";
 
 contract Automation is AutomationCompatibleInterface {
-    error InvalidTrigger();
+    error InvalidInternval();
     error InvalidTransactionNonce();
     error TransactionNotReadyForExecution();
     error InsufficientApprovalsForTransaction();
@@ -46,7 +46,7 @@ contract Automation is AutomationCompatibleInterface {
         bytes memory _transactionProposalSignature
     ) external {
         if (_interval == 0) {
-            revert InvalidTrigger();
+            revert InvalidInternval();
         }
 
         uint64 transactionNonce = smartSafeImpl.transactionNonce();
@@ -75,6 +75,8 @@ contract Automation is AutomationCompatibleInterface {
 
         lastExecutionTime[transactionNonce] = block.timestamp;
         scheduledTransactions[transactionNonce] = transaction;
+
+        removeTransactionFromMainQueue();
     }
 
     function addTransactionSignature(
@@ -88,24 +90,12 @@ contract Automation is AutomationCompatibleInterface {
             _transactionProposalSignature
         );
 
-        uint64 transactionNonce = smartSafeImpl.requiredTransactionNonce();
-
-        uint8 transactionApprovalsCount = smartSafeImpl
-            .transactionApprovalsCount(transactionNonce);
-        uint8 smartSafeThreshold = smartSafeImpl.threshold();
-
-        // once we get all required approvals, we remove the proposal from the main
-        // queue so that other proposals can be created.
-        if (transactionApprovalsCount == smartSafeThreshold) {
-            smartSafeImpl.removeProposal(transactionNonce);
-        }
+        removeTransactionFromMainQueue();
     }
 
-    function checkUpkeep(bytes calldata _checkData)
-        external
-        view
-        returns (bool _upkeepNeeded, bytes memory _performData)
-    {
+    function checkUpkeep(
+        bytes calldata _checkData
+    ) external view returns (bool _upkeepNeeded, bytes memory _performData) {
         uint64 transactionNonce = abi.decode(_checkData, (uint64));
 
         checkForTransactionValidity(transactionNonce);
@@ -130,11 +120,9 @@ contract Automation is AutomationCompatibleInterface {
         );
     }
 
-    function checkForTransactionValidity(uint64 _transactionNonce)
-        private
-        view
-        returns (ScheduledTransaction memory)
-    {
+    function checkForTransactionValidity(
+        uint64 _transactionNonce
+    ) private view returns (ScheduledTransaction memory) {
         uint8 transactionApprovalsCount = smartSafeImpl
             .transactionApprovalsCount(_transactionNonce);
         uint8 smartSafeThreshold = smartSafeImpl.threshold();
@@ -167,5 +155,19 @@ contract Automation is AutomationCompatibleInterface {
         }
 
         return scheduledTransaction;
+    }
+
+    function removeTransactionFromMainQueue() private {
+        uint64 transactionNonce = smartSafeImpl.requiredTransactionNonce();
+
+        uint8 transactionApprovalsCount = smartSafeImpl
+            .transactionApprovalsCount(transactionNonce);
+        uint8 smartSafeThreshold = smartSafeImpl.threshold();
+
+        // once we get all required approvals, we remove the proposal from the main
+        // queue so that other proposals can be executed.
+        if (transactionApprovalsCount == smartSafeThreshold) {
+            smartSafeImpl.removeProposal(transactionNonce);
+        }
     }
 }

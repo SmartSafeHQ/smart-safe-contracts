@@ -68,7 +68,7 @@ contract TransactionManager {
 
     function getQueueTransactions(
         uint32 _page
-    ) internal view returns (Transaction[] memory) {
+    ) private view returns (Transaction[] memory) {
         // `requiredTransactionNonce` is used as a pointer to at which index
         // start fetching `Transaction`s.
         uint64 startIndex = (_page * MAX_RETURN_SIZE) +
@@ -93,7 +93,7 @@ contract TransactionManager {
 
     function getExecutedTransactions(
         uint32 _page
-    ) internal view returns (Transaction[] memory) {
+    ) private view returns (Transaction[] memory) {
         uint64 startIndex = _page * MAX_RETURN_SIZE;
         uint64 endIndex = startIndex + MAX_RETURN_SIZE;
         if (endIndex > executedTransactionsSize) {
