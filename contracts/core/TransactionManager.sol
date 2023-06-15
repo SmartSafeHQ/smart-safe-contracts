@@ -23,6 +23,7 @@ contract TransactionManager {
 
     uint8 private constant MAX_RETURN_SIZE = 10;
 
+    // TODO: adicionar nova listagem de transações para todas as propostas
     mapping(uint64 => Transaction) public transactionQueue;
     mapping(uint64 => Transaction) public transactionExecuted;
 

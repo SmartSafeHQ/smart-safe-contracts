@@ -42,11 +42,10 @@ contract SmartSafe is
      * deploys a proxy.
      * @notice User can optionally send network native tokens (ETH, BNB, etc).
      */
-    function setupOwners(address[] memory _owners, uint8 _threshold)
-        external
-        payable
-        initializer
-    {
+    function setupOwners(
+        address[] memory _owners,
+        uint8 _threshold
+    ) external payable initializer {
         if (
             _owners.length == 0 ||
             _threshold == 0 ||
@@ -109,7 +108,7 @@ contract SmartSafe is
         // signature related
         address _transactionProposalSigner,
         bytes memory _transactionProposalSignature
-    ) external payable {
+    ) public payable {
         checkTransaction(
             _to,
             _value,
@@ -126,16 +125,18 @@ contract SmartSafe is
             _transactionProposalSigner,
             _transactionProposalSignature
         );
+
+        // TODO: se o caller for um owner, executar transação. contrário (um módulo), não executar.
     }
 
     function addTransactionSignature(
         address _transactionProposalSigner,
         ApprovalStatus _transactionApprovalType,
         bytes memory _transactionProposalSignature
-    ) external {
+    ) public {
         Transaction memory transaction = TransactionManager.getTransaction(
             TransactionState.Queued,
-            requiredTransactionNonce
+            TransactionManager.requiredTransactionNonce
         );
 
         checkTransaction(
@@ -148,7 +149,7 @@ contract SmartSafe is
         );
 
         TransactionManager.addTransactionSignature(
-            requiredTransactionNonce,
+            TransactionManager.requiredTransactionNonce,
             _transactionProposalSigner,
             _transactionApprovalType,
             _transactionProposalSignature
@@ -157,7 +158,7 @@ contract SmartSafe is
         // Automatically remove transaction from queue if rejections is equal
         // or greather than `threshold`
         uint8 rejectionsCount = TransactionManager.transactionRejectionsCount[
-            requiredTransactionNonce
+            TransactionManager.requiredTransactionNonce
         ];
         if (rejectionsCount >= OwnerManager.totalOwners / 2) {
             TransactionManager.requiredTransactionNonce++;
@@ -172,9 +173,9 @@ contract SmartSafe is
     }
 
     /**
-    * @notice This function removes a single proposal.
-    */
-    function removeProposal(uint64 _transactionNonce) external {
+     * @notice This function removes a single proposal.
+     */
+    function removeProposal(uint64 _transactionNonce) public {
         isCallerAuthorized();
 
         TransactionManager.moveTransaction(
@@ -188,9 +189,10 @@ contract SmartSafe is
     }
 
     /**
-    * @notice This function will remove all pending proposals.
-    */
-    function replaceNonce() external {
+     * @notice This function will remove all pending proposals.
+     * @dev TODO: executar essa função apenas depois de coletar todas as assinaturas do owners.
+     */
+    function replaceNonce() public {
         isCallerAuthorized();
 
         while (
@@ -208,11 +210,9 @@ contract SmartSafe is
         }
     }
 
-    function getTransactionApprovals(uint64 _transactionNonce)
-        external
-        view
-        returns (TransactionApproval[] memory)
-    {
+    function getTransactionApprovals(
+        uint64 _transactionNonce
+    ) public view returns (TransactionApproval[] memory) {
         return
             TransactionManager.getTransactionApprovals(
                 _transactionNonce,

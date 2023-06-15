@@ -2,10 +2,10 @@
 pragma solidity ^0.8.19;
 
 import {IOwnerManager} from "./IOwnerManager.sol";
-import {IModuleManager} from "./IModuleManager.sol";
+import {IModulesManager} from "./IModulesManager.sol";
 import {ITransactionManager, ApprovalStatus} from "./ITransactionManager.sol";
 
-interface ISmartSafe is ITransactionManager, IOwnerManager, IModuleManager {
+interface ISmartSafe is ITransactionManager, IOwnerManager, IModulesManager {
     function createTransactionProposal(
         // transaction related
         address _to,

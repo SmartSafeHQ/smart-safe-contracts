@@ -27,7 +27,7 @@ contract ModulesManager is SelfAuthorized, ExecuteManager {
         modules.remove(_moduleAddress);
     }
 
-    function getModules() external view returns (address[] memory) {
+    function getModules() public view returns (address[] memory) {
         return modules.values();
     }
 
