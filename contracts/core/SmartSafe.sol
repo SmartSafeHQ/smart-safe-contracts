@@ -85,6 +85,7 @@ contract SmartSafe is
         ExecuteManager.executeTransaction(
             proposedTransaction.to,
             proposedTransaction.value,
+            gasleft(),
             proposedTransaction.data
         );
 
@@ -190,7 +191,7 @@ contract SmartSafe is
 
     /**
      * @notice This function will remove all pending proposals.
-     * @dev TODO: executar essa função apenas depois de coletar todas as assinaturas do owners.
+     * @dev TODO: executar essa função apenas depois de coletar todas as assinaturas dos owners.
      */
     function replaceNonce() public {
         isCallerAuthorized();

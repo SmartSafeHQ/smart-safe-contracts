@@ -48,6 +48,6 @@ contract ModulesManager is SelfAuthorized, ExecuteManager {
             revert CallerIsNotAuthorized();
         }
 
-        return ExecuteManager.executeTransaction(_to, _value, _data);
+        return ExecuteManager.executeTransaction(_to, _value, gasleft(), _data);
     }
 }
